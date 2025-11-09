@@ -4,6 +4,7 @@ import { select, selectAll  } from "d3-selection";
 import "d3-transition";
 import * as brush from "./brush";
 import { initCanvas2D, redrawCanvasLines } from "./canvas2d";
+import { initCanvasWebGL, redrawWebGLLines } from "./webGL";
 import { initCanvasWebGPU, redrawWebGPULines } from "./webGPU";
 import * as context from "./contextMenu";
 import {
@@ -522,6 +523,8 @@ export function drawChart(content: any[]): void {
       break;
     case "WebGL":
       console.log("Using WebGL rendering");
+      initCanvasWebGL();
+      redrawWebGLLines(parcoords.newDataset, parcoords);
       break;
     case "WebGPU":
       console.log("Using WebGPU rendering");
