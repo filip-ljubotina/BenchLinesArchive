@@ -27,6 +27,9 @@ import {
   setDimensionRangeRounded,
   isDimensionCategorical,
   getAllWebTechOptions,
+  getAllDatasetOptions,
+  getCurrentDataset,
+  setCurrentDataset,
   getCurrentWebTechnologie,
   setCurrentWebTechnologie,
 } from "./lib/spcd3.js";
@@ -78,6 +81,7 @@ document.addEventListener(
     generateDropdownForInvert();
     generateDropdownForMove();
     generateDropDownForWebTech();
+    generateDropDownForDataset();
     generateDropdownForFilter();
     generateDropdownForRange();
     generateDropdownForSelectRecords();
@@ -138,6 +142,7 @@ function handleFileSelect(event) {
       generateDropdownForInvert();
       generateDropdownForMove();
       generateDropDownForWebTech();
+      generateDropDownForDataset();
       generateDropdownForFilter();
       generateDropdownForRange();
       generateDropdownForSelectRecords();
@@ -450,6 +455,43 @@ function calcDDBehaviour(dimensionContainer, selectButton) {
   }
 }
 
+function getDatasetPath(dataset) {
+  return `data/students_${dataset}.csv`;
+}
+
+export function generateDropDownForDataset() {
+  const container = document.getElementById("datasetContainer");
+  if (!container) return;
+
+  const select = document.createElement("select");
+
+  getAllDatasetOptions().forEach((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    if (value === getCurrentDataset()) option.selected = true;
+    select.appendChild(option);
+  });
+
+  select.addEventListener("change", async (e) => {
+    const value = e.target.value;
+    setCurrentDataset(value);
+    if (value !== "default") {
+      const path = getDatasetPath(value);
+      const res = await fetch(path);
+      const text = await res.text();
+      let reloadedData = loadCSV(text);
+      drawChart(reloadedData);
+    } else {
+      let reloadedData = loadCSV(data);
+      drawChart(reloadedData);
+    }
+  });
+
+  container.innerHTML = "";
+  container.appendChild(select);
+}
+
 export function generateDropDownForWebTech() {
   const container = document.getElementById("webTechContainer");
   if (!container) return;
@@ -467,6 +509,11 @@ export function generateDropDownForWebTech() {
   select.addEventListener("change", (e) => {
     const value = e.target.value;
     setCurrentWebTechnologie(value);
+    setCurrentDataset("default");
+    const select = document.querySelector("#datasetContainer select");
+    if (select) {
+      select.value = "default";
+    }
     let reloadedData = loadCSV(data);
     drawChart(reloadedData);
   });
