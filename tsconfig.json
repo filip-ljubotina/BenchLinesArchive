@@ -9,7 +9,8 @@
     "downlevelIteration" : true,
     "declaration": true,
     "declarationDir": "types",
-    "moduleResolution":"node"
+    "moduleResolution":"node",
+    "types":["@webgpu/types"]
   },
   "include": [
     "src/**/*"
