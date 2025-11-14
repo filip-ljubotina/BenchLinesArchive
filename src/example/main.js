@@ -463,6 +463,12 @@ export function generateDropDownForDataset() {
   const container = document.getElementById("datasetContainer");
   if (!container) return;
 
+  container.innerHTML = "";
+
+  const label = document.createElement("span");
+  label.textContent = "Dataset:";
+  label.style.marginRight = "0.5rem";
+
   const select = document.createElement("select");
 
   getAllDatasetOptions().forEach((value) => {
@@ -476,19 +482,18 @@ export function generateDropDownForDataset() {
   select.addEventListener("change", async (e) => {
     const value = e.target.value;
     setCurrentDataset(value);
+
     if (value !== "default") {
       const path = getDatasetPath(value);
       const res = await fetch(path);
       const text = await res.text();
-      let reloadedData = loadCSV(text);
-      drawChart(reloadedData);
+      drawChart(loadCSV(text));
     } else {
-      let reloadedData = loadCSV(data);
-      drawChart(reloadedData);
+      drawChart(loadCSV(data));
     }
   });
 
-  container.innerHTML = "";
+  container.appendChild(label);
   container.appendChild(select);
 }
 
@@ -496,6 +501,14 @@ export function generateDropDownForWebTech() {
   const container = document.getElementById("webTechContainer");
   if (!container) return;
 
+  container.innerHTML = "";
+
+  // Label
+  const label = document.createElement("span");
+  label.textContent = "Technologies:";
+  label.style.marginRight = "0.5rem";
+
+  // Dropdown
   const select = document.createElement("select");
 
   getAllWebTechOptions().forEach((value) => {
@@ -509,16 +522,15 @@ export function generateDropDownForWebTech() {
   select.addEventListener("change", (e) => {
     const value = e.target.value;
     setCurrentWebTechnologie(value);
+
     setCurrentDataset("default");
-    const select = document.querySelector("#datasetContainer select");
-    if (select) {
-      select.value = "default";
-    }
-    let reloadedData = loadCSV(data);
-    drawChart(reloadedData);
+    const datasetSelect = document.querySelector("#datasetContainer select");
+    if (datasetSelect) datasetSelect.value = "default";
+
+    drawChart(loadCSV(data));
   });
 
-  container.innerHTML = "";
+  container.appendChild(label);
   container.appendChild(select);
 }
 

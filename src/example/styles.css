@@ -33,6 +33,14 @@ body {
   flex-wrap: wrap;
 }
 
+#webTechContainer,
+#datasetContainer {
+  flex-basis: 100%;        /* <<< forces a new row */
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
 .input-button {
   appearance: none;
   background-color: #fafbfc;

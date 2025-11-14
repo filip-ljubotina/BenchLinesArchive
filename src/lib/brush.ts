@@ -3,7 +3,8 @@ import * as icon from './icons/icons';
 import * as helper from './utils';
 import { isDimensionCategorical } from './helperApiFunc';
 import * as api from './helperApiFunc';
-import { parcoords } from './globals';
+import { parcoords, makeLineInactiveCanvas, makeLineActiveCanvas,currWebTech } from './globals';
+import { redrawPolylines } from './parallelcoordinates';
 
 export function brushDown(cleanDimensionName: string, event: any, d: any,
     tooltipValues: any, window: any): void {
@@ -75,7 +76,11 @@ export function brushDown(cleanDimensionName: string, event: any, d: any,
         setToolTipBrush(tooltipValues, d, event, window, true);
     }
 
-    updateLines(d.name, cleanDimensionName);
+    if(currWebTech === "SVG-DOM") {
+        updateLines(d.name, cleanDimensionName);
+    } else {
+        updateCanvasLines(d.name, cleanDimensionName);
+    }
 }
 
 export function brushUp(cleanDimensionName: any, event: any, d: any,
@@ -139,7 +144,11 @@ export function brushUp(cleanDimensionName: any, event: any, d: any,
         setToolTipBrush(tooltipValues, d, event, window, false);
     }
 
-    updateLines(d.name, cleanDimensionName);
+    if(currWebTech === "SVG-DOM") {
+        updateLines(d.name, cleanDimensionName);
+    } else {
+        updateCanvasLines(d.name, cleanDimensionName);
+    }
 }
 
 export function dragAndBrush(cleanDimensionName: any, d: any, event: any,
@@ -210,7 +219,11 @@ export function dragAndBrush(cleanDimensionName: any, d: any, event: any,
         if (!isNaN(parcoords.yScales[d.name].domain()[0])) {
             setToolTipDragAndBrush(tooltipValuesTop, tooltipValuesDown, d, window, true, yPosTop, yPosRect + rectHeight);
         }
-        updateLines(d.name, cleanDimensionName);
+        if(currWebTech === "SVG-DOM") {
+            updateLines(d.name, cleanDimensionName);
+        } else {
+            updateCanvasLines(d.name, cleanDimensionName);
+        }
     }
 }
 
@@ -382,7 +395,7 @@ export function filterWithCoords(topPosition: number, bottomPosition: number,
 }
 
 
-function getLineName(d: any): string {
+export function getLineName(d: any): string {
     const keys = Object.keys(d);
     const key = keys[0];
     return helper.cleanString(d[key]);
@@ -572,6 +585,104 @@ function updateLines(dimension: string, cleanDimensionName: string): void {
             // do nothing
         }
     });
+}
+
+export function updateCanvasLines(
+  dimension: string,
+  cleanDimensionName: string,
+): void {
+  // 1) Read brush range (in pixels) from the triangles
+  const rangeTop = Number(
+    select("#triangle_down_" + cleanDimensionName).attr("y")
+  );
+  const rangeBottom = Number(
+    select("#triangle_up_" + cleanDimensionName).attr("y")
+  );
+
+  // 2) Maintain your filter metadata (same as before)
+  const invertStatus = getInvertStatus(dimension);
+  const domain = parcoords.yScales[dimension].domain();
+  const maxValue = !invertStatus ? domain[1] : domain[0];
+  const minValue = !invertStatus ? domain[0] : domain[1];
+  const range = maxValue - minValue;
+
+  const currentFilters = api.getFilter(dimension);
+
+  if (isDimensionCategorical(dimension)) {
+    const selectedCategories = parcoords
+      .yScales[dimension]
+      .domain()
+      .filter((cat: any) => {
+        const pos = parcoords.yScales[dimension](cat)!;
+        return pos >= rangeTop && pos <= rangeBottom;
+      });
+
+    addRange(
+      selectedCategories,
+      parcoords.currentPosOfDims,
+      dimension,
+      "currentFilterCategories"
+    );
+  } else {
+    addRange(
+      currentFilters[0],
+      parcoords.currentPosOfDims,
+      dimension,
+      "currentFilterBottom"
+    );
+    addRange(
+      currentFilters[1],
+      parcoords.currentPosOfDims,
+      dimension,
+      "currentFilterTop"
+    );
+  }
+
+  // 3) For each line (row in dataset), decide active/inactive
+  for (const row of parcoords.newDataset) {
+    const currentLineName = getLineName(row); // e.g. use Name or some unique id
+
+    // Compute this line's Y pixel on the brushed dimension
+    let valueY: number;
+
+    if (isDimensionCategorical(dimension)) {
+      const cat = row[dimension];
+      valueY = parcoords.yScales[dimension](cat)!;
+    } else {
+      const v = Number(row[dimension]);
+
+      if (isNaN(maxValue as any)) {
+        valueY = parcoords.yScales[dimension](v);
+      } else if (invertStatus) {
+        // inverted axis
+        valueY = (240 / range) * (v - minValue) + 80;
+      } else {
+        // normal axis
+        valueY = (240 / range) * (maxValue - v) + 80;
+      }
+    }
+
+    // 4) Check whether the line is within the brush range
+    const mainInside =
+      valueY >= rangeTop + 10 && valueY <= rangeBottom;
+
+    const specialAllRange320 =
+      valueY === 320 && valueY === rangeTop + 10 && valueY === rangeBottom;
+
+    const specialAllRange80 =
+      valueY === 80 && valueY === rangeTop + 10 && valueY === rangeBottom;
+
+    if (!mainInside || specialAllRange320 || specialAllRange80) {
+      // outside (or special full-range cases): mark inactive
+      makeLineInactiveCanvas(currentLineName);
+    } else {
+      // inside: mark active
+      makeLineActiveCanvas(currentLineName);
+    }
+  }
+
+  // 5) Redraw canvas using updated line state
+  redrawPolylines(parcoords.newDataset, parcoords);
 }
 
 function addRange(value: number, dims: any[], dimension: string, property: string): void {
