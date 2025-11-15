@@ -8974,19 +8974,11 @@ function redrawWebGPULines(dataset, parcoords) {
     // Get canvas dimensions
     const canvasWidth = canvasEl.width;
     const canvasHeight = canvasEl.height;
-    let activeCount = 0;
-    let inactiveCount = 0;
     // console.log("Context:", context);
     for (const d of dataset) {
         const id = getLineName(d);
         // Determine if the line is active or inactive
         const active = lineState[id]?.active ?? true;
-        if (active) {
-            activeCount++;
-        }
-        else {
-            inactiveCount++;
-        }
         const pts = getPolylinePoints(d, parcoords, dpr);
         if (pts.length < 2)
             continue;
@@ -9011,7 +9003,7 @@ function redrawWebGPULines(dataset, parcoords) {
         pass.setVertexBuffer(0, vertexBuffer);
         pass.draw(verts.length / 2, 1, 0, 0);
     }
-    console.log(`Active lines: ${activeCount}, Inactive lines: ${inactiveCount}`);
+    // console.log(`Active lines: ${activeCount}, Inactive lines: ${inactiveCount}`);
     pass.end();
     device.queue.submit([encoder.finish()]);
 }

@@ -277,10 +277,6 @@ export function redrawWebGPULines(dataset: any[], parcoords: any) {
   // The devicePixelRatio of Window interface returns the ratio of the resolution in physical pixels 
   // to the resolution in CSS pixels for the current display device.
   const dpr = window.devicePixelRatio || 1;
-
-  
-
-
   // Get canvas dimensions
   const canvasWidth = canvasEl.width;
   const canvasHeight = canvasEl.height;
@@ -322,14 +318,13 @@ export function redrawWebGPULines(dataset: any[], parcoords: any) {
     });
 
     device.queue.writeBuffer(vertexBuffer, 0, verts);
-
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, active ? activeBindGroup : inactiveBindGroup);
     pass.setVertexBuffer(0, vertexBuffer);
     pass.draw(verts.length / 2, 1, 0, 0);
   }
 
-  console.log(`Active lines: ${activeCount}, Inactive lines: ${inactiveCount}`);
+  // console.log(`Active lines: ${activeCount}, Inactive lines: ${inactiveCount}`);
 
   pass.end();
   device.queue.submit([encoder.finish()]);
