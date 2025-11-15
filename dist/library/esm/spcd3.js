@@ -10828,6 +10828,7 @@ function getSelected() {
     return selected;
 }
 function setSelection(records) {
+    console.log("Triggered setSelection");
     for (let i = 0; i < records.length; i++) {
         let stroke = select("#" + cleanString(records[i])).style("stroke");
         if (stroke !== "lightgrey") {
@@ -10841,6 +10842,7 @@ function setSelection(records) {
     }
 }
 function toggleSelection(record) {
+    console.log("Triggered toggleSelection for record:", record);
     const selected = isSelected(record);
     if (selected) {
         setUnselected(record);
@@ -10850,17 +10852,20 @@ function toggleSelection(record) {
     }
 }
 function setSelected(record) {
+    console.log("Triggered setSelected for record:", record);
     let selectableLines = [];
     selectableLines.push(record);
     setSelection(selectableLines);
 }
 function setUnselected(record) {
+    console.log("Triggered setUnselected for record:", record);
     selectAll("#" + cleanString(record))
         .classed("selected", false)
         .transition()
         .style("stroke", "rgba(0, 129, 175, 0.5)");
 }
 function isRecordInactive(record) {
+    console.log("Triggered isRecordInactive for record:", record);
     const stroke = select("#" + cleanString(record));
     let node = stroke.node();
     let style = node.style.stroke;
@@ -10868,6 +10873,7 @@ function isRecordInactive(record) {
 }
 //---------- Selection Functions With IDs ----------
 function setSelectionWithId(recordIds) {
+    console.log("Triggered setSelectionWithId for recordIds:", recordIds);
     let records = [];
     for (let i = 0; i < recordIds.length; i++) {
         let record = getRecordWithId(recordIds[i]);
@@ -10876,26 +10882,32 @@ function setSelectionWithId(recordIds) {
     setSelection(records);
 }
 function isSelectedWithRecordId(recordId) {
+    console.log("Triggered isSelectedWithRecordId for recordId:", recordId);
     let record = getRecordWithId(recordId);
     return isSelected(record);
 }
 function getRecordWithId(recordId) {
+    console.log("Triggered getRecordWithId for recordId:", recordId);
     const item = parcoords.currentPosOfDims.find((object) => object.recordId == recordId);
     return item.key;
 }
 function toggleSelectionWithId(recordId) {
+    console.log("Triggered toggleSelectionWithId for recordId:", recordId);
     const record = getRecordWithId(recordId);
     toggleSelection(record);
 }
 function setSelectedWithId(recordId) {
+    console.log("Triggered setSelectedWithId for recordId:", recordId);
     const record = getRecordWithId(recordId);
     setSelected(record);
 }
 function setUnselectedWithId(recordId) {
+    console.log("Triggered setUnselectedWithId for recordId:", recordId);
     const record = getRecordWithId(recordId);
     setUnselected(record);
 }
 function createHiDPICanvas(plot, w, h) {
+    console.log("Triggered createHiDPICanvas with width:", w, "and height:", h);
     const el = plot
         .append("canvas")
         .attr("id", "pc_canvas")
@@ -10913,6 +10925,7 @@ function createHiDPICanvas(plot, w, h) {
     return { dpr };
 }
 function recreateCanvas() {
+    console.log("Triggered recreateCanvas");
     const plot = select("#plotArea");
     plot.select("#pc_canvas").remove();
     const { dpr } = createHiDPICanvas(plot, width, 360);
@@ -10920,6 +10933,7 @@ function recreateCanvas() {
         initCanvas2D(dpr);
 }
 function redrawPolylines(dataset, parcoords) {
+    console.log("Triggered redrawPolylines");
     switch (currWebTech) {
         case "Canvas2D":
             recreateCanvas();
@@ -10963,6 +10977,7 @@ function runPolylineBenchmark(iters) {
     return avg;
 }
 function drawChart(content) {
+    console.log("Triggered drawChart");
     setRefreshData(structuredClone(content));
     deleteChart();
     const newFeatures = content.columns.reverse();
@@ -11054,6 +11069,7 @@ function drawChart(content) {
     };
 }
 function reset() {
+    console.log("Triggered reset");
     drawChart(refreshData);
     let toolbar = select("#toolbar");
     toolbar
@@ -11071,6 +11087,7 @@ function refresh() {
     }
 }
 function deleteChart() {
+    console.log("Triggered deleteChart");
     const wrapper = select("#parallelcoords");
     wrapper.selectAll("*").remove();
     select("#pc_svg").remove();
@@ -11088,6 +11105,7 @@ function deleteChart() {
 //---------- Helper Functions ----------
 // ---------- Needed for Built-In Interactivity Functions ---------- //
 function setUpParcoordData(data, newFeatures) {
+    console.log("Triggered setUpParcoordData");
     setPadding(60);
     setPaddingXaxis(60);
     if (newFeatures.length <= 6) {
@@ -11198,6 +11216,7 @@ const tooltipTest = select("body")
     .style("z-index", "1000");
 let cleanupTimeout = null;
 const handlePointerEnter = (event, d) => {
+    console.log("Triggered handlePointerEnter with event:", event, "and data:", d);
     doNotHighlight();
     const data = getAllPointerEventsData(event);
     highlight(data);
@@ -11239,6 +11258,7 @@ document.addEventListener("mousemove", (e) => {
     }
 });
 function setActivePathLines(svg, content, parcoords) {
+    console.log("Triggered setActivePathLines");
     let contextMenu = select("#parallelcoords")
         .append("g")
         .attr("id", "contextmenuRecords")
@@ -11336,6 +11356,7 @@ function redrawSvgLines(svg, content, parcoords) {
 const delay1 = 50;
 const throttleShowValues = throttle(createToolTipForValues, delay1);
 function setContextMenuForActiceRecords(contextMenu, event, d) {
+    console.log("Triggered setContextMenuForActiceRecords with event:", event, "and data:", d);
     const container = document.querySelector("#parallelcoords");
     const rect = container.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -11458,14 +11479,17 @@ function setFeatureAxis(svg, yAxis, parcoords, width, padding) {
     setInvertIcon(featureAxis);
 }
 function showMarker(dimension) {
+    console.log("Triggered showMarker for dimension:", dimension);
     const cleanDimensionName = cleanString(dimension);
     select("#marker_" + cleanDimensionName).attr("opacity", 1);
 }
 function hideMarker(dimension) {
+    console.log("Triggered hideMarker for dimension:", dimension);
     const cleanDimensionName = cleanString(dimension);
     select("#marker_" + cleanDimensionName).attr("opacity", 0);
 }
 function setDefsForIcons() {
+    console.log("Triggered setDefsForIcons");
     const svgContainer = svg;
     let defs = svgContainer.select("defs");
     defs = svgContainer.append("defs");
@@ -11527,7 +11551,7 @@ function doNotHighlight() {
             line.transition().style("stroke", "rgba(255, 165, 0, 1)");
         }
         else {
-            line.transition().style("stroke", "rgba(255, 0, 0, 0.5)");
+            line.transition().style("stroke", "rgba(0, 129, 175, 0.5)");
         }
     });
     currentlyHighlightedItems = [];
