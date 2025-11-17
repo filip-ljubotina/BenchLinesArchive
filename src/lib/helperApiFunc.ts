@@ -8,11 +8,11 @@ import {
   GraphicsWebTech,
   currWebTech,
   setCurrentWebTech,
-  StudentDataset,
+  DatasetName,
   currDataset,
   BenchmarkData,
   benchmarkData,
-  setBenchmarkData
+  setBenchmarkData,
 } from "./globals";
 import * as utils from "./utils";
 import * as helper from "./helper";
@@ -145,11 +145,21 @@ export function show(dimension: string): void {
     });
 }
 
-export function getAllDatasetOptions(): StudentDataset[] {
-  return ["default", "100", "1000", "10000", "100000"];
+export function getAllDatasetOptions(): DatasetName[] {
+  return [
+    "student_dataset",
+    "10D_100",
+    "10D_1000",
+    "10D_10000",
+    "10D_100000",
+    "20D_100",
+    "20D_1000",
+    "20D_10000",
+    "20D_100000",
+  ];
 }
 
-export function getCurrentDataset(): StudentDataset {
+export function getCurrentDataset(): DatasetName {
   return currDataset;
 }
 
@@ -161,7 +171,7 @@ export function getBenchmarkData(): BenchmarkData {
   return benchmarkData;
 }
 
-export function setCurrentDataset(newDataset: StudentDataset) {
+export function setCurrentDataset(newDataset: DatasetName) {
   setCurrentDataset(newDataset);
 }
 

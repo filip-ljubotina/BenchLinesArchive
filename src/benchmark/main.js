@@ -460,7 +460,7 @@ function calcDDBehaviour(dimensionContainer, selectButton) {
 }
 
 function getDatasetPath(dataset) {
-  return `data/students_${dataset}.csv`;
+  return `data/dataset_${dataset}.csv`;
 }
 
 export function generateDropDownForDataset() {
@@ -487,7 +487,7 @@ export function generateDropDownForDataset() {
     const value = e.target.value;
     setCurrentDataset(value);
 
-    if (value !== "default") {
+    if (value !== "student_dataset") {
       const path = getDatasetPath(value);
       const res = await fetch(path);
       const text = await res.text();
@@ -523,15 +523,21 @@ export function generateDropDownForWebTech() {
     select.appendChild(option);
   });
 
-  select.addEventListener("change", (e) => {
+  select.addEventListener("change", async (e) => {
     const value = e.target.value;
     setCurrentWebTechnologie(value);
 
-    setCurrentDataset("default");
+    setCurrentDataset("student_dataset");
     const datasetSelect = document.querySelector("#datasetContainer select");
-    if (datasetSelect) datasetSelect.value = "default";
 
-    drawChart(loadCSV(data));
+    if (datasetSelect !== "student_dataset") {
+      const path = getDatasetPath(datasetSelect.value);
+      const res = await fetch(path);
+      const text = await res.text();
+      drawChart(loadCSV(text));
+    } else {
+      drawChart(loadCSV(data));
+    }
   });
 
   container.appendChild(label);

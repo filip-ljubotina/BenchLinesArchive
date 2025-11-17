@@ -35,8 +35,17 @@ export let canvasEl: HTMLCanvasElement | null = null;
 
 export type GraphicsWebTech = "Canvas2D" | "SVG-DOM" | "WebGL" | "WebGPU";
 export let currWebTech: GraphicsWebTech = "SVG-DOM";
-export type StudentDataset = "default" | "100" | "1000" | "10000" | "100000";
-export let currDataset: StudentDataset = "default";
+export type DatasetName =
+  | "student_dataset"
+  | "10D_100"
+  | "10D_1000"
+  | "10D_10000"
+  | "10D_100000"
+  | "20D_100"
+  | "20D_1000"
+  | "20D_10000"
+  | "20D_100000";
+export let currDataset: DatasetName = "student_dataset";
 export const lineState: Record<string, { active: boolean }> = {};
 
 export type BenchmarkData = {
@@ -52,7 +61,7 @@ export function setBenchmarkData(newBenchmarkData) {
   benchmarkData = newBenchmarkData;
 }
 
-export function setDataset(dataset: StudentDataset) {
+export function setDataset(dataset: DatasetName) {
   currDataset = dataset;
 }
 
