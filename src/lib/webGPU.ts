@@ -1,6 +1,13 @@
-import { canvasEl } from "./globals";
+import { canvasEl, lineState } from "./globals";
+import { getLineName } from "./brush";
 
 let device: GPUDevice;
+let pipeline: GPURenderPipeline;
+let pass: GPURenderPassEncoder;
+let encoder: GPUCommandEncoder;
+let activeBindGroup: GPUBindGroup;
+let inactiveBindGroup: GPUBindGroup;
+let context: GPUCanvasContext;
 
 function getPolylinePoints(d: any, parcoords: any, dpr: number): [number, number][] {
   const pts: [number, number][] = [];
@@ -12,35 +19,12 @@ function getPolylinePoints(d: any, parcoords: any, dpr: number): [number, number
   return pts;
 }
 
-// Below function initializes WebGPU context and device
-export async function initCanvasWebGPU() {
-
-  // The Navigator interface represents the state and the identity of the user agent. 
-  // It allows scripts to query it and to register themselves to carry on some activities.
-  if (!navigator.gpu) {
-    throw new Error("WebGPU not supported.");
-  }
-
-  // Request and Check if a GPU adapter is available
-  const adapter = await navigator.gpu.requestAdapter();
-  if (!adapter) {
-    throw new Error("GPU adapter unavailable.");
-  }
-  device = await adapter.requestDevice();
-}
-
-
-export function redrawWebGPULines(dataset: any[], parcoords: any) {
-
-  // The devicePixelRatio of Window interface returns the ratio of the resolution in physical pixels 
-  // to the resolution in CSS pixels for the current display device.
-  const dpr = window.devicePixelRatio || 1;
-
+export function initWebGPU() {
   // Check if the GPU device is initialized
   if (!device) throw new Error("GPU device is not initialized. Call initCanvasWebGPU first.");
 
   // Get WebGPU context and configure it
-  const context = canvasEl.getContext("webgpu");
+  context = canvasEl.getContext("webgpu");
   const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
   
   // Configure the context with device and format
@@ -98,6 +82,9 @@ export function redrawWebGPULines(dataset: any[], parcoords: any) {
 
 
     code: `
+      
+      @group(0) @binding(0) var<uniform> color: vec4<f32>;
+
       struct VSOut {
         @builtin(position) position : vec4<f32>,
       };
@@ -112,12 +99,21 @@ export function redrawWebGPULines(dataset: any[], parcoords: any) {
       @fragment
       fn fs_main() -> @location(0) vec4<f32> {
         // rgba(0, 129, 175, 0.5)
-        return vec4<f32>(0.0, 129.0 / 255.0, 175.0 / 255.0, 0.5);
+        // return vec4<f32>(0.0, 129.0 / 255.0, 175.0 / 255.0, 0.5);
+        return color;
       }
     `
   });
-
   
+  const bindGroupLayout = device.createBindGroupLayout({
+    entries: [
+      {
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {},
+      },
+    ],
+  });
 
   const vertexBufferLayout: GPUVertexBufferLayout = {
 
@@ -147,9 +143,11 @@ export function redrawWebGPULines(dataset: any[], parcoords: any) {
     ],
   };
 
-  const pipeline = device.createRenderPipeline({
+  pipeline = device.createRenderPipeline({
     // Every pipeline needs a layout that describes what types of inputs.
-    layout: "auto",
+    layout: device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout],
+    }),
 
     // Now, we provide details about the vertex stage. 
     
@@ -211,11 +209,81 @@ export function redrawWebGPULines(dataset: any[], parcoords: any) {
     },
   });
 
+  // Create uniform buffers for active and inactive colors
+  const activeColorBuffer = device.createBuffer({
+    size: 16,  // vec4<f32> = 16 bytes
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(activeColorBuffer, 0, new Float32Array([0.0, 129.0 / 255.0, 175.0 / 255.0, 0.5]));
+
+  const inactiveColorBuffer = device.createBuffer({
+    size: 16,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(inactiveColorBuffer, 0, new Float32Array([211.0 / 255.0, 211.0 / 255.0, 211.0 / 255.0, 0.4]));
+
+  // Create bind groups for each color
+  activeBindGroup = device.createBindGroup({
+    layout: bindGroupLayout,
+    entries: [{ binding: 0, resource: { buffer: activeColorBuffer } }],
+  });
+
+  inactiveBindGroup = device.createBindGroup({
+    layout: bindGroupLayout,
+    entries: [{ binding: 0, resource: { buffer: inactiveColorBuffer } }],
+  });
+
   // Create command encoder to encode GPU commands
-  const encoder = device.createCommandEncoder();
+  encoder = device.createCommandEncoder();
 
   // Begin a render pass
-  const pass = encoder.beginRenderPass({
+  pass = encoder.beginRenderPass({
+    colorAttachments: [{
+      view: context.getCurrentTexture().createView(),
+      loadOp: "clear",
+      // clear to transparent
+      clearValue: { r: 0, g: 0, b: 0, a: 0 },
+      storeOp: "store",
+    }],
+  });
+}
+
+
+// Below function initializes WebGPU context and device
+export async function initCanvasWebGPU() {
+
+  // console.log("Initializing WebGPU...");
+
+  // The Navigator interface represents the state and the identity of the user agent. 
+  // It allows scripts to query it and to register themselves to carry on some activities.
+  if (!navigator.gpu) {
+    throw new Error("WebGPU not supported.");
+  }
+
+  // Request and Check if a GPU adapter is available
+  const adapter = await navigator.gpu.requestAdapter();
+  if (!adapter) {
+    throw new Error("GPU adapter unavailable.");
+  }
+  device = await adapter.requestDevice();
+
+  // console.log("WebGPU initialized successfully.");
+
+  initWebGPU();
+  
+}
+
+export function redrawWebGPULines(dataset: any[], parcoords: any) {
+
+  if (!device) {
+    throw new Error("GPU device is not initialized. Call initCanvasWebGPU first.");
+  }
+
+  // Create command encoder to encode GPU commands
+  encoder = device.createCommandEncoder();
+
+  // Begin a render pass
+  pass = encoder.beginRenderPass({
     colorAttachments: [{
       view: context.getCurrentTexture().createView(),
       loadOp: "clear",
@@ -225,12 +293,29 @@ export function redrawWebGPULines(dataset: any[], parcoords: any) {
     }],
   });
 
-
+  // The devicePixelRatio of Window interface returns the ratio of the resolution in physical pixels 
+  // to the resolution in CSS pixels for the current display device.
+  const dpr = window.devicePixelRatio || 1;
   // Get canvas dimensions
   const canvasWidth = canvasEl.width;
   const canvasHeight = canvasEl.height;
- 
+
+  let activeCount = 0;
+  let inactiveCount = 0;
+
+  // console.log("Context:", context);
   for (const d of dataset) {
+    const id = getLineName(d);
+    // Determine if the line is active or inactive
+    const active = lineState[id]?.active ?? true;
+
+    if (active) {
+      activeCount++;
+    } else {
+      inactiveCount++;
+    }
+
+
     const pts = getPolylinePoints(d, parcoords, dpr);
     if (pts.length < 2) continue;
 
@@ -252,11 +337,13 @@ export function redrawWebGPULines(dataset: any[], parcoords: any) {
     });
 
     device.queue.writeBuffer(vertexBuffer, 0, verts);
-
     pass.setPipeline(pipeline);
+    pass.setBindGroup(0, active ? activeBindGroup : inactiveBindGroup);
     pass.setVertexBuffer(0, vertexBuffer);
     pass.draw(verts.length / 2, 1, 0, 0);
   }
+
+  // console.log(`Active lines: ${activeCount}, Inactive lines: ${inactiveCount}`);
 
   pass.end();
   device.queue.submit([encoder.finish()]);
