@@ -10,6 +10,7 @@ import {
   setCurrentWebTech,
   DatasetName,
   currDataset,
+  setDataset,
   BenchmarkData,
   benchmarkData,
   setBenchmarkData,
@@ -172,7 +173,7 @@ export function getBenchmarkData(): BenchmarkData {
 }
 
 export function setCurrentDataset(newDataset: DatasetName) {
-  setCurrentDataset(newDataset);
+  setDataset(newDataset);
 }
 
 export function getAllWebTechOptions(): GraphicsWebTech[] {

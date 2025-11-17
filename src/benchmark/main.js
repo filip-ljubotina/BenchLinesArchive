@@ -530,7 +530,7 @@ export function generateDropDownForWebTech() {
     setCurrentDataset("student_dataset");
     const datasetSelect = document.querySelector("#datasetContainer select");
 
-    if (datasetSelect !== "student_dataset") {
+    if (datasetSelect.value !== "student_dataset") {
       const path = getDatasetPath(datasetSelect.value);
       const res = await fetch(path);
       const text = await res.text();
@@ -595,6 +595,22 @@ export function generateBenchmarkInput() {
     info.textContent =
       `Iterations: ${benchmarkData.numOfIterations}, ` +
       `Average polyline draw time: ${avg.toFixed(3)} ms`;
+
+    const table = document.querySelector("#pastTestsTable tbody");
+
+    const row = document.createElement("tr");
+
+    const index = table.children.length + 1;
+
+    row.innerHTML = `
+    <td>${index}</td>
+    <td>${getCurrentWebTechnologie()}</td>
+    <td>${getCurrentDataset()}</td>
+    <td>${benchmarkData.numOfIterations}</td>
+    <td>${avg.toFixed(3)}</td>
+  `;
+
+    table.appendChild(row);
   });
 
   container.appendChild(label);
