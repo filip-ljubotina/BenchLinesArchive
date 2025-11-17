@@ -1,6 +1,6 @@
 import { drag } from "d3-drag";
 import { easeCubic } from "d3-ease";
-import { select, selectAll  } from "d3-selection";
+import { select, selectAll } from "d3-selection";
 import "d3-transition";
 import * as brush from "./brush";
 import { initCanvas2D, redrawCanvasLines } from "./canvas2d";
@@ -37,6 +37,8 @@ import {
   svg,
   width,
   yAxis,
+  benchmarkData,
+  setBenchmarkData,
 } from "./globals";
 import * as helper from "./helper";
 import * as api from "./helperApiFunc";
@@ -69,7 +71,10 @@ export function invertWoTransition(dimension: string): void {
     `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`
   );
 
-    select('#invert_hitbox_' + cleanDimensionName).style('cursor', `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`);
+  select("#invert_hitbox_" + cleanDimensionName).style(
+    "cursor",
+    `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`
+  );
 
   select(dimensionId).call(
     yAxis[dimension].scale(
@@ -112,7 +117,10 @@ export function setInversionStatus(dimension: string, status: string): void {
     `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`
   );
 
-    select('#invert_hitbox_' + cleanDimensionName).style('cursor', `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`);
+  select("#invert_hitbox_" + cleanDimensionName).style(
+    "cursor",
+    `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`
+  );
 
   select(dimensionId)
     .transition()
@@ -319,8 +327,8 @@ export function setSelection(records: string[]): void {
         .classed("selected", true)
         .transition()
         .style("stroke", "rgba(255, 165, 0, 1)");
-        //const data = parcoords.data.find(d => d.Name === records[i]);
-        //helper.createToolTipForValues(data, String(i));
+      //const data = parcoords.data.find(d => d.Name === records[i]);
+      //helper.createToolTipForValues(data, String(i));
     }
   }
 }
@@ -398,17 +406,20 @@ export function setUnselectedWithId(recordId: string): void {
 
 //---------- IO Functions ----------
 
-function computeMargins(labels = [], {
-  font = '12px Verdana, sans-serif',
-  top = 0,
-  bottom = 0,
-  extraLeft = 0,
-  extraRight = 0
-} = {}) {
-  const ctx = document.createElement('canvas').getContext('2d');
+function computeMargins(
+  labels = [],
+  {
+    font = "12px Verdana, sans-serif",
+    top = 0,
+    bottom = 0,
+    extraLeft = 0,
+    extraRight = 0,
+  } = {}
+) {
+  const ctx = document.createElement("canvas").getContext("2d");
   ctx.font = font;
 
-  let maxWidth = ctx.measureText(String(labels[labels.length-1])).width;
+  let maxWidth = ctx.measureText(String(labels[labels.length - 1])).width;
 
   const left = Math.ceil(maxWidth) + extraLeft;
   const right = Math.ceil(maxWidth / 2) + extraRight;
@@ -433,6 +444,66 @@ function createHiDPICanvas(plot: any, w: number, h: number) {
   el.style.height = `${h}px`;
   setCanvasEl(el);
   return { dpr };
+}
+
+export function recreateCanvas() {
+  const plot = select("#plotArea");
+  plot.select("#pc_canvas").remove();
+  const { dpr } = createHiDPICanvas(plot, width, 360);
+  if (currWebTech === "Canvas2D") initCanvas2D(dpr);
+}
+
+export function redrawPolylines(dataset: any[], parcoords: any) {
+  switch (currWebTech) {
+    case "Canvas2D":
+      recreateCanvas();
+      redrawCanvasLines(dataset, parcoords);
+      break;
+
+    case "SVG-DOM":
+      redrawSvgLines(svg, dataset, parcoords);
+      break;
+
+    case "WebGL":
+      recreateCanvas();
+      initCanvasWebGL();
+      redrawWebGLLines(dataset, parcoords);
+      break;
+
+    case "WebGPU":
+      recreateCanvas();
+      initCanvasWebGPU()
+        .then(() => {
+          redrawWebGPULines(parcoords.newDataset, parcoords);
+        })
+        .catch((err) => console.error("WebGPU init failed:", err));
+      break;
+  }
+}
+
+export function runPolylineBenchmark(iters: number): number | null {
+  if (!iters || iters <= 0) {
+    console.warn("runPolylineBenchmark: iterations not set or <= 0");
+    return null;
+  }
+
+  let totalTime = 0;
+
+  for (let i = 0; i < iters; i++) {
+    const t0 = performance.now();
+    redrawPolylines(parcoords.newDataset, parcoords);
+    const t1 = performance.now();
+    totalTime += t1 - t0;
+  }
+
+  const avg = totalTime / iters;
+
+  setBenchmarkData({
+    numOfIterations: iters,
+    avgSpeedTime: avg,
+  });
+
+  return avg;
 }
 
 export function drawChart(content: any[]): void {
@@ -507,8 +578,8 @@ export function drawChart(content: any[]): void {
 
   switch (currWebTech) {
     case "Canvas2D":
-      let ctx = initCanvas2D(dpr);
-      redrawCanvasLines(ctx, parcoords.newDataset, parcoords);
+      initCanvas2D(dpr);
+      redrawCanvasLines(parcoords.newDataset, parcoords);
       break;
     case "SVG-DOM":
       setActive(setActivePathLines(svg, content, parcoords));
@@ -528,9 +599,11 @@ export function drawChart(content: any[]): void {
       break;
     case "WebGPU":
       console.log("Using WebGPU rendering");
-      initCanvasWebGPU().then(() => {
-        redrawWebGPULines(parcoords.newDataset, parcoords);
-      }).catch(err => console.error("WebGPU init failed:", err));
+      initCanvasWebGPU()
+        .then(() => {
+          redrawWebGPULines(parcoords.newDataset, parcoords);
+        })
+        .catch((err) => console.error("WebGPU init failed:", err));
       break;
   }
 
@@ -585,11 +658,11 @@ function setUpParcoordData(data: any, newFeatures: []): void {
   setPadding(60);
   setPaddingXaxis(60);
 
-    if (newFeatures.length <= 6) {
-      setWidth(newFeatures.length * 180);
-    } else {
+  if (newFeatures.length <= 6) {
+    setWidth(newFeatures.length * 180);
+  } else {
     setWidth(newFeatures.length * 100);
-    }
+  }
 
   setHeight(400);
   setInitDimension(newFeatures);
@@ -756,7 +829,7 @@ const handlePointerEnter = (event: any, d: any) => {
     datasetMap.set(record[hoverlabel], record);
   });
 
-    data.forEach((item: any, i: number) => {
+  data.forEach((item: any, i: number) => {
     const rec = datasetMap.get(item);
     if (rec) {
       helper.createToolTipForValues(rec, rec.id ?? String(i));
@@ -910,15 +983,26 @@ function setActivePathLines(
   return active;
 }
 
+export function redrawSvgLines(svg: any, content: any[], parcoords: any) {
+  svg.select("#contextmenuRecords").remove();
+  svg.select("g.active").remove();
+
+  setActivePathLines(svg, content, parcoords);
+}
+
 const delay1 = 50;
 export const throttleShowValues = utils.throttle(
   helper.createToolTipForValues,
   delay1
 );
 
-function setContextMenuForActiceRecords(contextMenu: any, event: any, d: any): void {
-    const container = document.querySelector("#parallelcoords");
-    const rect = container.getBoundingClientRect();
+function setContextMenuForActiceRecords(
+  contextMenu: any,
+  event: any,
+  d: any
+): void {
+  const container = document.querySelector("#parallelcoords");
+  const rect = container.getBoundingClientRect();
 
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
@@ -1203,49 +1287,63 @@ function clearSelection(): void {
 }
 
 function setInvertIcon(featureAxis: any, padding: number): void {
-    let value = (80 / 1.5).toFixed(4);
+  let value = (80 / 1.5).toFixed(4);
 
   const svg = featureAxis
-    .append('svg')
-    .attr('x', -6 - 22)
-    .attr('y', Number(value) - 22)
-    .attr('width', 44)
-    .attr('height', 22)
-    .style('overflow', 'visible') 
+    .append("svg")
+    .attr("x", -6 - 22)
+    .attr("y", Number(value) - 22)
+    .attr("width", 44)
+    .attr("height", 22)
+    .style("overflow", "visible");
 
-  svg.append('rect')
-    .attr('id', 'invert_hitbox')
-    .attr('class', 'hitbox')
-    .attr('x', 6)
-    .attr('y', 20)
-    .attr('width', 44)
-    .attr('height', 15)
-    .attr('rx', 6)
-    .attr('ry', 6)
-    .attr('fill', 'transparent')
-    .style('pointer-events', 'all')
-     .each(function (d: { name: string }) {
-      const processed = utils.cleanString(d.name);
-      select(this)
-        .attr('id', 'invert_hitbox_' + processed)
-        .style('cursor', `url('data:image/svg+xml,${utils.setSize(encodeURIComponent(icon.getArrowDownCursor()), 12)}') 8 8, auto`);
-    });
-
-  svg.append('use')
-    .attr('href', '#arrow_image_up')
-    .attr('width', 12)
-    .attr('height', 12)
-    .attr('x', 22.5)
-    .attr('y', Number(value)-33)
+  svg
+    .append("rect")
+    .attr("id", "invert_hitbox")
+    .attr("class", "hitbox")
+    .attr("x", 6)
+    .attr("y", 20)
+    .attr("width", 44)
+    .attr("height", 15)
+    .attr("rx", 6)
+    .attr("ry", 6)
+    .attr("fill", "transparent")
+    .style("pointer-events", "all")
     .each(function (d: { name: string }) {
       const processed = utils.cleanString(d.name);
       select(this)
-        .attr('id', 'dimension_invert_' + processed)
-        .text('up')
-        .style('cursor', `url('data:image/svg+xml,${utils.setSize(encodeURIComponent(icon.getArrowDownCursor()), 12)}') 8 8, auto`);
+        .attr("id", "invert_hitbox_" + processed)
+        .style(
+          "cursor",
+          `url('data:image/svg+xml,${utils.setSize(
+            encodeURIComponent(icon.getArrowDownCursor()),
+            12
+          )}') 8 8, auto`
+        );
     });
 
-  svg.on('click', (event: any, d: { name: string }) => {
+  svg
+    .append("use")
+    .attr("href", "#arrow_image_up")
+    .attr("width", 12)
+    .attr("height", 12)
+    .attr("x", 22.5)
+    .attr("y", Number(value) - 33)
+    .each(function (d: { name: string }) {
+      const processed = utils.cleanString(d.name);
+      select(this)
+        .attr("id", "dimension_invert_" + processed)
+        .text("up")
+        .style(
+          "cursor",
+          `url('data:image/svg+xml,${utils.setSize(
+            encodeURIComponent(icon.getArrowDownCursor()),
+            12
+          )}') 8 8, auto`
+        );
+    });
+
+  svg.on("click", (event: any, d: { name: string }) => {
     api.invert(d.name);
     event.stopPropagation();
   });
@@ -1272,192 +1370,304 @@ function setMarker(featureAxis: any): void {
 
 // Brushing
 
-function setRectToDrag(featureAxis: any, svg: any, parcoords: {
-    xScales: any; yScales: {};
-    dragging: {}; dragPosStart: {}; currentPosOfDims: any[]; newFeatures: any;
-    features: any[]; newDataset: any[];
-}, tooltipValuesTop: any,
-    tooltipValuesDown: any): void {
-
-    let delta: any;
-    featureAxis
-        .each(function (d: { name: string; }) {
-            const processedDimensionName = utils.cleanString(d.name);
-            select(this)
-                .append('g')
-                .attr('class', 'rect')
-                .append('rect')
-                .attr('id', 'rect_' + processedDimensionName)
-                .attr('width', 12)
-                .attr('height', 240)
-                .attr('x', -6)
-                .attr('y', 80)
-                .attr('fill', 'rgb(242, 242, 76)')
-                .attr('opacity', '0.5')
-                .style('cursor', 'default')
-                .call(drag()
-                    .on('drag', (event: any, d: any) => {
-                        if (parcoords.newFeatures.length > 25) {
-                            brush.throttleDragAndBrush(processedDimensionName, d, event, delta,
-                                tooltipValuesTop, tooltipValuesDown, window);
-                        }
-                        else {
-                            brush.dragAndBrush(processedDimensionName, d, event, delta,
-                                tooltipValuesTop, tooltipValuesDown, window);
-                        }
-
-                    })
-                    .on('start', (event: { y: number; }, d: any) => {
-                        let current = select("#rect_" + processedDimensionName);
-                        delta = current.attr("y") - event.y;
-                    })
-                    .on('end', () => {
-                        tooltipValuesTop.style('visibility', 'hidden');
-                        tooltipValuesDown.style('visibility', 'hidden');
-                    }));
-        });
+function setRectToDrag(
+  featureAxis: any,
+  svg: any,
+  parcoords: {
+    xScales: any;
+    yScales: {};
+    dragging: {};
+    dragPosStart: {};
+    currentPosOfDims: any[];
+    newFeatures: any;
+    features: any[];
+    newDataset: any[];
+  },
+  tooltipValuesTop: any,
+  tooltipValuesDown: any
+): void {
+  let delta: any;
+  featureAxis.each(function (d: { name: string }) {
+    const processedDimensionName = utils.cleanString(d.name);
+    select(this)
+      .append("g")
+      .attr("class", "rect")
+      .append("rect")
+      .attr("id", "rect_" + processedDimensionName)
+      .attr("width", 12)
+      .attr("height", 240)
+      .attr("x", -6)
+      .attr("y", 80)
+      .attr("fill", "rgb(242, 242, 76)")
+      .attr("opacity", "0.5")
+      .style("cursor", "default")
+      .call(
+        drag()
+          .on("drag", (event: any, d: any) => {
+            if (parcoords.newFeatures.length > 25) {
+              brush.throttleDragAndBrush(
+                processedDimensionName,
+                d,
+                event,
+                delta,
+                tooltipValuesTop,
+                tooltipValuesDown,
+                window
+              );
+            } else {
+              brush.dragAndBrush(
+                processedDimensionName,
+                d,
+                event,
+                delta,
+                tooltipValuesTop,
+                tooltipValuesDown,
+                window
+              );
+            }
+          })
+          .on("start", (event: { y: number }, d: any) => {
+            let current = select("#rect_" + processedDimensionName);
+            delta = current.attr("y") - event.y;
+          })
+          .on("end", () => {
+            tooltipValuesTop.style("visibility", "hidden");
+            tooltipValuesDown.style("visibility", "hidden");
+          })
+      );
+  });
 }
 
-function setBrushUp(featureAxis: any, parcoords: {
-    xScales: any; yScales: {}; dragging: {};
-    dragPosStart: {}; currentPosOfDims: any[]; newFeatures: any; features: any[]; newDataset: any[];
-}, tooltipValues: any, brushOverlay: any): void {
+function setBrushUp(
+  featureAxis: any,
+  parcoords: {
+    xScales: any;
+    yScales: {};
+    dragging: {};
+    dragPosStart: {};
+    currentPosOfDims: any[];
+    newFeatures: any;
+    features: any[];
+    newDataset: any[];
+  },
+  tooltipValues: any,
+  brushOverlay: any
+): void {
+  featureAxis.each(function (d: { name: string }) {
+    const processedDimensionName = utils.cleanString(d.name);
+    const g = select(this)
+      .append("g")
+      .attr("class", "brush_" + processedDimensionName);
 
-    featureAxis.each(function (d: { name: string }) {
-      const processedDimensionName = utils.cleanString(d.name);
-      const g = select(this).append('g').attr('class', 'brush_' + processedDimensionName);
+    const iconY = 320,
+      iconX = -7,
+      iconW = 14,
+      iconH = 10;
 
-      const iconY = 320, iconX = -7, iconW = 14, iconH = 10;
+    g.append("use")
+      .attr("id", "triangle_up_" + processedDimensionName)
+      .attr("x", iconX)
+      .attr("y", iconY)
+      .attr("width", iconW)
+      .attr("height", iconH)
+      .attr("href", "#brush_image_top")
+      .attr("pointer-events", "none")
+      .style(
+        "cursor",
+        `url('data:image/svg+xml,${utils.setSize(
+          encodeURIComponent(icon.getArrowTopCursor()),
+          13
+        )}') 8 8, auto`
+      );
 
-      g.append('use')
-        .attr('id', 'triangle_up_' + processedDimensionName)
-        .attr('x', iconX)
-        .attr('y', iconY)
-        .attr('width', iconW)
-        .attr('height', iconH)
-        .attr('href', '#brush_image_top')
-        .attr('pointer-events', 'none')
-        .style('cursor', `url('data:image/svg+xml,${utils.setSize(encodeURIComponent(icon.getArrowTopCursor()), 13)}') 8 8, auto`);
+    const hit = g
+      .append("rect")
+      .attr("class", "handle-hitbox")
+      .attr("id", "triangle_up_hit" + processedDimensionName)
+      .attr("x", -15)
+      .attr("y", iconY)
+      .attr("width", 30)
+      .attr("height", 30)
+      .style("fill", "transparent")
+      .style("pointer-events", "all")
+      .style("touch-action", "none")
+      .style("-webkit-user-select", "none")
+      .style("user-select", "none")
+      .style(
+        "cursor",
+        `url('data:image/svg+xml,${utils.setSize(
+          encodeURIComponent(icon.getArrowTopCursor()),
+          13
+        )}') 8 8, auto`
+      );
 
-      const hit = g.append('rect')
-        .attr('class', 'handle-hitbox')
-        .attr('id', 'triangle_up_hit' + processedDimensionName)
-        .attr('x', -15)
-        .attr('y', iconY)
-        .attr('width', 30)
-        .attr('height', 30)
-        .style('fill', 'transparent')
-        .style('pointer-events', 'all')
-        .style('touch-action', 'none')
-        .style('-webkit-user-select', 'none')
-        .style('user-select', 'none')
-        .style('cursor', `url('data:image/svg+xml,${utils.setSize(encodeURIComponent(icon.getArrowTopCursor()), 13)}') 8 8, auto`);;
+    function cleanup() {
+      brushOverlay.style("pointer-events", "none").lower();
+      tooltipValues.style("visibility", "hidden");
+    }
 
-      function cleanup() {
-        brushOverlay.style('pointer-events', 'none').lower();
-        tooltipValues.style('visibility', 'hidden');
-      }
+    const makeDrag = () =>
+      drag()
+        .container(function () {
+          return (this as any).ownerSVGElement || this;
+        })
+        .on("start", () => {
+          brushOverlay.raise().style("pointer-events", "all");
+          g.select("#triangle_up_" + processedDimensionName).raise();
+          g.selectAll(".handle-hitbox").raise();
+        })
+        .on("drag", (event: any, dd: any) => {
+          if (parcoords.newFeatures.length > 25) {
+            brush.throttleBrushUp(
+              processedDimensionName,
+              event,
+              dd,
+              tooltipValues,
+              window
+            );
+          } else {
+            brush.brushUp(
+              processedDimensionName,
+              event,
+              dd,
+              tooltipValues,
+              window
+            );
+          }
 
-      const makeDrag = () => drag()
-        .container(function () { return (this as any).ownerSVGElement || this; })
-        .on('start', () => {
-        brushOverlay.raise().style('pointer-events', 'all');
-        g.select('#triangle_up_' + processedDimensionName).raise();
-        g.selectAll('.handle-hitbox').raise();
-      })
-      .on('drag', (event: any, dd: any) => {
-        if (parcoords.newFeatures.length > 25) {
-          brush.throttleBrushUp(processedDimensionName, event, dd, tooltipValues, window);
-        } else {
-          brush.brushUp(processedDimensionName, event, dd, tooltipValues, window);
-        }
+          const yNow = g
+            .select("#triangle_up_" + processedDimensionName)
+            .attr("y");
+          if (yNow != null) {
+            hit.attr("y", +yNow);
+          }
 
-        const yNow = g.select('#triangle_up_' + processedDimensionName).attr('y');
-        if (yNow != null) {
-          hit.attr('y', +yNow);
-        }
-
-        g.selectAll('.handle-hitbox').raise();
-      })
-       .on('end', () => {
-        cleanup();
-        requestAnimationFrame(() => {
-        const newHit = g.select<SVGRectElement>('.handle-hitbox');
-        if (!newHit.empty()) newHit.call(makeDrag());
-      });
-    });
+          g.selectAll(".handle-hitbox").raise();
+        })
+        .on("end", () => {
+          cleanup();
+          requestAnimationFrame(() => {
+            const newHit = g.select<SVGRectElement>(".handle-hitbox");
+            if (!newHit.empty()) newHit.call(makeDrag());
+          });
+        });
     hit.call(makeDrag());
   });
 }
 
-function setBrushDown(featureAxis: any, parcoords: {
-    xScales: any; yScales: {}; dragging: {};
-    dragPosStart: {}; currentPosOfDims: any[]; newFeatures: any; features: any[]; newDataset: any[];
-}, tooltipValues: any, brushOverlay: any): void {
+function setBrushDown(
+  featureAxis: any,
+  parcoords: {
+    xScales: any;
+    yScales: {};
+    dragging: {};
+    dragPosStart: {};
+    currentPosOfDims: any[];
+    newFeatures: any;
+    features: any[];
+    newDataset: any[];
+  },
+  tooltipValues: any,
+  brushOverlay: any
+): void {
+  featureAxis.each(function (d: { name: string }) {
+    const processedDimensionName = utils.cleanString(d.name);
+    const g = select(this)
+      .append("g")
+      .attr("class", "brush_" + processedDimensionName);
 
-featureAxis.each(function (d: { name: string }) {
-      const processedDimensionName = utils.cleanString(d.name);
-      const g = select(this).append('g').attr('class', 'brush_' + processedDimensionName);
+    const iconY = 70,
+      iconX = -7,
+      iconW = 14,
+      iconH = 10;
 
-      const iconY = 70, iconX = -7, iconW = 14, iconH = 10;
+    g.append("use")
+      .attr("id", "triangle_down_" + processedDimensionName)
+      .attr("x", iconX)
+      .attr("y", iconY)
+      .attr("width", iconW)
+      .attr("height", iconH)
+      .attr("href", "#brush_image_bottom")
+      .attr("pointer-events", "none")
+      .style(
+        "cursor",
+        `url('data:image/svg+xml,${utils.setSize(
+          encodeURIComponent(icon.getArrowBottomCursor()),
+          13
+        )}') 8 8, auto`
+      );
 
-      g.append('use')
-        .attr('id', 'triangle_down_' + processedDimensionName)
-        .attr('x', iconX)
-        .attr('y', iconY)
-        .attr('width', iconW)
-        .attr('height', iconH)
-        .attr('href', '#brush_image_bottom')
-        .attr('pointer-events', 'none')
-        .style('cursor', `url('data:image/svg+xml,${utils.setSize(encodeURIComponent(icon.getArrowBottomCursor()), 13)}') 8 8, auto`);
+    const hit = g
+      .append("rect")
+      .attr("class", "handle-hitbox")
+      .attr("id", "triangle_down_hit" + processedDimensionName)
+      .attr("x", -15)
+      .attr("y", iconY)
+      .attr("width", 30)
+      .attr("height", 30)
+      .style("fill", "transparent")
+      .style("pointer-events", "all")
+      .style("touch-action", "none")
+      .style("-webkit-user-select", "none")
+      .style("user-select", "none")
+      .style(
+        "cursor",
+        `url('data:image/svg+xml,${utils.setSize(
+          encodeURIComponent(icon.getArrowBottomCursor()),
+          13
+        )}') 8 8, auto`
+      );
 
-      const hit = g.append('rect')
-        .attr('class', 'handle-hitbox')
-        .attr('id', 'triangle_down_hit' + processedDimensionName)
-        .attr('x', -15)
-        .attr('y', iconY)
-        .attr('width', 30)
-        .attr('height', 30)
-        .style('fill', 'transparent')
-        .style('pointer-events', 'all')
-        .style('touch-action', 'none')
-        .style('-webkit-user-select', 'none')
-        .style('user-select', 'none')
-        .style('cursor', `url('data:image/svg+xml,${utils.setSize(encodeURIComponent(icon.getArrowBottomCursor()), 13)}') 8 8, auto`);;
+    function cleanup() {
+      brushOverlay.style("pointer-events", "none").lower();
+      tooltipValues.style("visibility", "hidden");
+    }
 
-      function cleanup() {
-        brushOverlay.style('pointer-events', 'none').lower();
-        tooltipValues.style('visibility', 'hidden');
-      }
+    const makeDrag = () =>
+      drag()
+        .container(function () {
+          return (this as any).ownerSVGElement || this;
+        })
+        .on("start", () => {
+          brushOverlay.raise().style("pointer-events", "all");
+          g.select("#triangle_down_" + processedDimensionName).raise();
+          g.selectAll(".handle-hitbox").raise();
+        })
+        .on("drag", (event: any, dd: any) => {
+          if (parcoords.newFeatures.length > 25) {
+            brush.throttleBrushDown(
+              processedDimensionName,
+              event,
+              dd,
+              tooltipValues,
+              window
+            );
+          } else {
+            brush.brushDown(
+              processedDimensionName,
+              event,
+              dd,
+              tooltipValues,
+              window
+            );
+          }
 
-      const makeDrag = () => drag()
-        .container(function () { return (this as any).ownerSVGElement || this; })
-        .on('start', () => {
-        brushOverlay.raise().style('pointer-events', 'all');
-        g.select('#triangle_down_' + processedDimensionName).raise();
-        g.selectAll('.handle-hitbox').raise();
-      })
-      .on('drag', (event: any, dd: any) => {
-        if (parcoords.newFeatures.length > 25) {
-          brush.throttleBrushDown(processedDimensionName, event, dd, tooltipValues, window);
-        } else {
-          brush.brushDown(processedDimensionName, event, dd, tooltipValues, window);
-        }
+          const yNow = g
+            .select("#triangle_down_" + processedDimensionName)
+            .attr("y");
+          if (yNow != null) {
+            hit.attr("y", +yNow);
+          }
 
-        const yNow = g.select('#triangle_down_' + processedDimensionName).attr('y');
-        if (yNow != null) {
-          hit.attr('y', +yNow);
-        }
-
-        g.selectAll('.handle-hitbox').raise();
-      })
-       .on('end', () => {
-        cleanup();
-        requestAnimationFrame(() => {
-        const newHit = g.select<SVGRectElement>('.handle-hitbox');
-        if (!newHit.empty()) newHit.call(makeDrag());
-      });
-    });
+          g.selectAll(".handle-hitbox").raise();
+        })
+        .on("end", () => {
+          cleanup();
+          requestAnimationFrame(() => {
+            const newHit = g.select<SVGRectElement>(".handle-hitbox");
+            if (!newHit.empty()) newHit.call(makeDrag());
+          });
+        });
     hit.call(makeDrag());
   });
 }

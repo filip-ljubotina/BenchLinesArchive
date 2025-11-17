@@ -16,11 +16,11 @@ function cleanPackageLock() {
 }
 
 function copyExampleFolder() {
-    return src('./src/example/**/*').pipe(dest('./dist/example'));
+    return src('./src/benchmark/**/*').pipe(dest('./dist/benchmark'));
 }
 
 function copyLibFileToExample() {
-    return src('./dist/library/esm/spcd3.js').pipe(dest('./dist/example/lib/'));
+    return src('./dist/library/esm/spcd3.js').pipe(dest('./dist/benchmark/lib/'));
 }
 
 exports.clean = cleanDistFolder;

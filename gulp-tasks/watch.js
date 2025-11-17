@@ -10,7 +10,7 @@ function watch() {
     browserSync.create();
 
     browserSync.init({
-        server: './dist/example'
+        server: './dist/benchmark'
     });
 
     gulp.watch('/src/lib/scripts/**/*', gulp.series(bundle, reload));

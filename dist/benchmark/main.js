@@ -30,6 +30,8 @@ import {
   getAllDatasetOptions,
   getCurrentDataset,
   setCurrentDataset,
+  runPolylineBenchmark,
+  getBenchmarkData,
   getCurrentWebTechnologie,
   setCurrentWebTechnologie,
 } from "./lib/spcd3.js";
@@ -83,6 +85,7 @@ document.addEventListener(
     generateDropDownForWebTech();
     generateDropDownForDataset();
     generateDropdownForFilter();
+    generateBenchmarkInput();
     generateDropdownForRange();
     generateDropdownForSelectRecords();
     document.getElementById("border").style.visibility = "visible";
@@ -144,6 +147,7 @@ function handleFileSelect(event) {
       generateDropDownForWebTech();
       generateDropDownForDataset();
       generateDropdownForFilter();
+      generateBenchmarkInput();
       generateDropdownForRange();
       generateDropdownForSelectRecords();
 
@@ -463,6 +467,12 @@ export function generateDropDownForDataset() {
   const container = document.getElementById("datasetContainer");
   if (!container) return;
 
+  container.innerHTML = "";
+
+  const label = document.createElement("span");
+  label.textContent = "Dataset:";
+  label.style.marginRight = "0.5rem";
+
   const select = document.createElement("select");
 
   getAllDatasetOptions().forEach((value) => {
@@ -476,19 +486,18 @@ export function generateDropDownForDataset() {
   select.addEventListener("change", async (e) => {
     const value = e.target.value;
     setCurrentDataset(value);
+
     if (value !== "default") {
       const path = getDatasetPath(value);
       const res = await fetch(path);
       const text = await res.text();
-      let reloadedData = loadCSV(text);
-      drawChart(reloadedData);
+      drawChart(loadCSV(text));
     } else {
-      let reloadedData = loadCSV(data);
-      drawChart(reloadedData);
+      drawChart(loadCSV(data));
     }
   });
 
-  container.innerHTML = "";
+  container.appendChild(label);
   container.appendChild(select);
 }
 
@@ -496,6 +505,14 @@ export function generateDropDownForWebTech() {
   const container = document.getElementById("webTechContainer");
   if (!container) return;
 
+  container.innerHTML = "";
+
+  // Label
+  const label = document.createElement("span");
+  label.textContent = "Technologies:";
+  label.style.marginRight = "0.5rem";
+
+  // Dropdown
   const select = document.createElement("select");
 
   getAllWebTechOptions().forEach((value) => {
@@ -509,17 +526,75 @@ export function generateDropDownForWebTech() {
   select.addEventListener("change", (e) => {
     const value = e.target.value;
     setCurrentWebTechnologie(value);
+
     setCurrentDataset("default");
-    const select = document.querySelector("#datasetContainer select");
-    if (select) {
-      select.value = "default";
-    }
-    let reloadedData = loadCSV(data);
-    drawChart(reloadedData);
+    const datasetSelect = document.querySelector("#datasetContainer select");
+    if (datasetSelect) datasetSelect.value = "default";
+
+    drawChart(loadCSV(data));
   });
 
-  container.innerHTML = "";
+  container.appendChild(label);
   container.appendChild(select);
+}
+
+export function generateBenchmarkInput() {
+  const container = document.getElementById("benchmarkContainer");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const label = document.createElement("span");
+  label.textContent = "Avg. rendering time benchmark:";
+  label.style.marginRight = "0.5rem";
+
+  const input = document.createElement("input");
+  input.type = "number";
+  input.min = "1";
+  input.placeholder = "Enter iterations";
+  input.style.width = "120px";
+  input.style.marginRight = "0.5rem";
+
+  const btn = document.createElement("button");
+  btn.textContent = "Start benchmark";
+  btn.className = "input-button";
+
+  const currentDisplay = document.createElement("span");
+  currentDisplay.style.marginLeft = "1rem";
+  currentDisplay.style.color = "#555";
+  let benchmarkData = getBenchmarkData();
+  if (benchmarkData.numOfIterations !== null) {
+    currentDisplay.textContent = `Iterations: ${benchmarkData.numOfIterations}`;
+  }
+
+  btn.addEventListener("click", () => {
+    const avg = runPolylineBenchmark(parseInt(input.value, 10));
+
+    if (avg == null) {
+      alert("Set a valid number of iterations first.");
+      return;
+    }
+
+    const container = document.getElementById("benchmarkContainer");
+    if (!container) return;
+
+    let info = container.querySelector(".benchmark-info");
+    if (!info) {
+      info = document.createElement("span");
+      info.className = "benchmark-info";
+      info.style.marginLeft = "1rem";
+      container.appendChild(info);
+    }
+    benchmarkData = getBenchmarkData();
+    info.textContent =
+      `Iterations: ${benchmarkData.numOfIterations}, ` +
+      `Average polyline draw time: ${avg.toFixed(3)} ms`;
+  });
+
+  container.appendChild(label);
+  container.appendChild(input);
+  container.appendChild(btn);
+  container.appendChild(currentDisplay);
 }
 
 function moveDimensionLeft() {

@@ -10,6 +10,9 @@ import {
   setCurrentWebTech,
   StudentDataset,
   currDataset,
+  BenchmarkData,
+  benchmarkData,
+  setBenchmarkData
 } from "./globals";
 import * as utils from "./utils";
 import * as helper from "./helper";
@@ -148,6 +151,14 @@ export function getAllDatasetOptions(): StudentDataset[] {
 
 export function getCurrentDataset(): StudentDataset {
   return currDataset;
+}
+
+export function setNewBenchmarkData(newBenchmarkData: BenchmarkData) {
+  setBenchmarkData(newBenchmarkData);
+}
+
+export function getBenchmarkData(): BenchmarkData {
+  return benchmarkData;
 }
 
 export function setCurrentDataset(newDataset: StudentDataset) {
