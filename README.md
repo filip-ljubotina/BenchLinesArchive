@@ -1,3 +1,14 @@
+This project is a fork of the original SPCD3 teaching repository created by the Institute of Interactive Systems and Data Science at TU Graz:
+🔗 https://github.com/tugraz-isds/spcd3
+Our fork adapts and extends the original material for the IAWU course with a focus on WebGPU/WebGL comparisons, performance exploration, and interactive data visualisation techniques.
+
+# Project goals
+- Provide a clear overview of Canvas 2D, SVG, WebGL, and WebGPU technologies.
+- Compare these technologies in terms of usability, performance and modern GPU capabilities.
+- 
+# Deployed version of the project
+Here you can access the deployed version of the project: https://filip-ljubotina.github.io/iawu-spcd3/
+
 
 # Steerable Parallel Coordinates in D3 (SPCD3)
 
