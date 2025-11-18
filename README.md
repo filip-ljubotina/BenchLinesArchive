@@ -1,4 +1,4 @@
-This project is a fork of the original SPCD3 teaching repository created by the Institute of Interactive Systems and Data Science at TU Graz:
+This project is a fork of the original SPCD3 teaching repository created by the Institute of Human-Centred Computing at TU Graz:
 🔗 https://github.com/tugraz-isds/spcd3
 Our fork adapts and extends the original material for the IAWU course with a focus on WebGPU/WebGL comparisons, performance exploration, and interactive data visualisation techniques.
 
