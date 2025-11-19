@@ -5,6 +5,7 @@ import "d3-transition";
 import * as brush from "./brush";
 import { initCanvas2D, redrawCanvasLines } from "./canvas2d";
 import { initCanvasWebGL, redrawWebGLLines } from "./webGL";
+import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
 import { initCanvasWebGPU, redrawWebGPULines } from "./webGPU";
 import * as context from "./contextMenu";
 import {
@@ -481,8 +482,10 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
 
     case "WebGL":
       recreateCanvas();
-      initCanvasWebGL();
-      redrawWebGLLines(dataset, parcoords);
+      // initCanvasWebGL();
+      // redrawWebGLLines(dataset, parcoords);
+      initCanvasWebGLThreeJS();
+      redrawWebGLLinesThreeJS(dataset, parcoords)
       break;
 
     case "WebGPU":
@@ -613,8 +616,10 @@ export function drawChart(content: any[]): void {
       break;
     case "WebGL":
       // console.log("Using WebGL rendering");
-      initCanvasWebGL();
-      redrawWebGLLines(parcoords.newDataset, parcoords);
+      // initCanvasWebGL();
+      // redrawWebGLLines(parcoords.newDataset, parcoords);
+      initCanvasWebGLThreeJS();
+      redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords)
       break;
     case "WebGPU":
       // console.log("Using WebGPU rendering from DrawChart");
