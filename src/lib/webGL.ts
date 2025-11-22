@@ -7,15 +7,13 @@ let program: WebGLProgram;
 // Persistent buffers
 let vertexBuffer: WebGLBuffer | null = null;
 let colorBuffer: WebGLBuffer | null = null;
-let vertexCount = 0;
 
-//locations
+// Shader attribute/uniform locations
 let posLoc: number;
 let colorLoc: number;
 let resolutionLoc: WebGLUniformLocation;
 
 // Vertex and fragment shaders
-// added v_color to reduce draw calls (instead of drawing active / inactive it's just assigned to the shader)
 const vertexShaderSrc = `
 attribute vec2 position;
 attribute vec4 a_color;
@@ -38,7 +36,7 @@ void main() {
 }
 `;
 
-//combines the shaders
+// Shader helpers
 function createShader(gl: WebGLRenderingContext, type: number, source: string) {
   const shader = gl.createShader(type);
   if (!shader) throw new Error("createShader failed");
@@ -51,7 +49,6 @@ function createShader(gl: WebGLRenderingContext, type: number, source: string) {
   return shader;
 }
 
-//creates program of shaders to run on gpu
 function createProgram(gl: WebGLRenderingContext, vShader: WebGLShader, fShader: WebGLShader) {
   const program = gl.createProgram();
   if (!program) throw new Error("createProgram failed");
@@ -65,7 +62,7 @@ function createProgram(gl: WebGLRenderingContext, vShader: WebGLShader, fShader:
   return program;
 }
 
-//webgl init
+// WebGL initialization
 export function initCanvasWebGL() {
   const dpr = window.devicePixelRatio || 1;
   canvasEl.width = canvasEl.clientWidth * dpr;
@@ -79,8 +76,7 @@ export function initCanvasWebGL() {
   program = createProgram(gl, vShader, fShader);
 
   gl.viewport(0, 0, canvasEl.width, canvasEl.height);
-
-  gl.disable(gl.BLEND);   //minor efficiency improvement
+  gl.disable(gl.BLEND); // minor efficiency gain
 
   // Persistent buffers
   vertexBuffer = gl.createBuffer();
@@ -99,7 +95,7 @@ export function initCanvasWebGL() {
   return gl;
 }
 
-//converts to points
+// Convert dataset row to polyline points
 function getPolylinePoints(d: any, parcoords: any, dpr: number): [number, number][] {
   const pts: [number, number][] = [];
   parcoords.newFeatures.forEach((name: string) => {
@@ -110,8 +106,16 @@ function getPolylinePoints(d: any, parcoords: any, dpr: number): [number, number
   return pts;
 }
 
-//prepare one buffer to be used no matter the datasize
-function prepareBuffers(dataset: any[], parcoords: any, dpr: number) {
+// Draw all lines
+export function redrawWebGLLines(dataset: any[], parcoords: any) {
+  if (!gl || !vertexBuffer || !colorBuffer) return;
+
+  gl.useProgram(program);
+  gl.uniform2f(resolutionLoc, canvasEl.width, canvasEl.height);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  const dpr = window.devicePixelRatio || 1;
+
   const vertices: number[] = [];
   const colors: number[] = [];
 
@@ -121,46 +125,30 @@ function prepareBuffers(dataset: any[], parcoords: any, dpr: number) {
     const pts = getPolylinePoints(d, parcoords, dpr);
     if (pts.length < 2) continue;
 
-    // webgl uses normalized rgb colors so need to /255 to get the color alpha needs to be one since we disabled blending for performance
     const color = active
-      ? [128/255, 192/255, 215/255, 1] // dark blue
-      : [234/255, 234/255, 234/255, 1]; // gray
+      ? [128 / 255, 192 / 255, 215 / 255, 1]
+      : [234 / 255, 234 / 255, 234 / 255, 1];
 
-    for (const p of pts) {
-      vertices.push(p[0], p[1]);
+    // Convert polyline to line segments for LINES
+    for (let i = 0; i < pts.length - 1; i++) {
+      vertices.push(pts[i][0], pts[i][1]);
+      vertices.push(pts[i + 1][0], pts[i + 1][1]);
+
+      colors.push(...color);
       colors.push(...color);
     }
   }
 
-  return {
-    vertices: new Float32Array(vertices),
-    colors: new Float32Array(colors),
-    count: vertices.length / 2
-  };
-}
+  const vertexData = new Float32Array(vertices);
+  const colorData = new Float32Array(colors);
 
-//actually draw the lines
-export function redrawWebGLLines(dataset: any[], parcoords: any) {
-  if (!gl || !vertexBuffer || !colorBuffer) return;
-
-  gl.useProgram(program);
-  gl.uniform2f(resolutionLoc, canvasEl.width, canvasEl.height);
-  gl.clear(gl.COLOR_BUFFER_BIT);
-
-  const dpr = window.devicePixelRatio || 1;
-  const { vertices, colors, count } = prepareBuffers(dataset, parcoords, dpr);
-  vertexCount = count;
-
-  // Upload vertex positions
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.DYNAMIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.DYNAMIC_DRAW);
   gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
-  // Upload vertex colors
   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, colors, gl.DYNAMIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, colorData, gl.DYNAMIC_DRAW);
   gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
 
-  // Single draw call for all lines
-  gl.drawArrays(gl.LINE_STRIP, 0, vertexCount);
+  gl.drawArrays(gl.LINES, 0, vertexData.length / 2);
 }
