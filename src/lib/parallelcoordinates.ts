@@ -7,7 +7,10 @@ import { initCanvas2D, redrawCanvasLines } from "./canvas2d";
 import { initCanvasWebGL, redrawWebGLLines } from "./webGL";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
 import { initCanvasWebGPU, redrawWebGPULines } from "./webGPU";
-import { initCanvasWebGPUThreeJS, redrawWebGPULinesThreeJS } from "./webGPU_Three";
+import {
+  initCanvasWebGPUThreeJS,
+  redrawWebGPULinesThreeJS,
+} from "./webGPU_Three";
 // import { initCanvasWebGPUOrillusion, redrawWebGPULinesOrillusion } from "./webGPU_Orillusion";
 import * as context from "./contextMenu";
 import {
@@ -495,12 +498,12 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
       redrawWebGPULinesThreeJS(dataset, parcoords);
       break;
     // case "WebGPU-Orillusion":
-      // redrawWebGPULinesOrillusion(dataset, parcoords);
-      // break;
+    // redrawWebGPULinesOrillusion(dataset, parcoords);
+    // break;
   }
 }
 
-export async function setupTechnology(tech: string, parcoords: any) {
+export async function setupTechnology(tech: string) {
   const dpr = window.devicePixelRatio || 1;
 
   switch (tech) {
@@ -549,7 +552,7 @@ export async function runPolylineBenchmark(
   let totalTime = 0;
 
   for (let i = 0; i < iters; i++) {
-    await setupTechnology(currWebTech, parcoords);
+    await setupTechnology(currWebTech);
     const t0 = performance.now();
     redrawPolylines(parcoords.newDataset, parcoords);
     const t1 = performance.now();
@@ -676,7 +679,7 @@ export function drawChart(content: any[]): void {
         })
         .catch((err) => console.error("WebGPU init failed:", err));
       break;
-    
+
     case "WebGPU-Three":
       initCanvasWebGPUThreeJS()
         .then(() => {

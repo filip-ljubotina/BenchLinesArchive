@@ -593,7 +593,7 @@ export function generateBenchmarkInput() {
     benchmarkData = getBenchmarkData();
     info.textContent =
       `Iterations: ${benchmarkData.numOfIterations}, ` +
-      `Average polyline draw time: ${avg.toFixed(3)} ms`;
+      `Average draw time: ${avg.toFixed(3)} ms`;
 
     const table = document.querySelector("#pastTestsTable tbody");
 
