@@ -1,8 +1,5 @@
 import * as THREE from "three";
 import WebGPURenderer from "three/src/renderers/webgpu/WebGPURenderer.js";
-import { Line2 } from "three/examples/jsm/lines/Line2.js";
-import { LineBasicMaterial } from "three";
-import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import { getLineName } from "./brush";
 import { canvasEl, lineState } from "./globals";
 
