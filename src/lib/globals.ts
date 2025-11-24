@@ -33,7 +33,8 @@ export let refreshData: any;
 export let initDimension: any;
 export let canvasEl: HTMLCanvasElement | null = null;
 
-export type GraphicsWebTech = "Canvas2D" | "SVG-DOM" | "WebGL" | "WebGPU" | "WebGLThree" | "WebGPU-Three";
+export type GraphicsWebTech = "Canvas2D" | "SVG-DOM" | "WebGL" | "WebGPU" | "WebGLThree" | "WebGPU-Three" ;
+// | "WebGPU-Orillusion"
 export let currWebTech: GraphicsWebTech = "SVG-DOM";
 export type DatasetName =
   | "student_dataset"

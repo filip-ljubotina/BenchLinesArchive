@@ -178,6 +178,7 @@ export function setCurrentDataset(newDataset: DatasetName) {
 
 export function getAllWebTechOptions(): GraphicsWebTech[] {
   return ["Canvas2D", "SVG-DOM", "WebGL", "WebGLThree", "WebGPU", "WebGPU-Three"];
+  // , "WebGPU-Orillusion"
 }
 
 export function getCurrentWebTechnologie(): GraphicsWebTech {
