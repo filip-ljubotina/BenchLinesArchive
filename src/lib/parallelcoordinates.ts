@@ -7,6 +7,8 @@ import { initCanvas2D, redrawCanvasLines } from "./canvas2d";
 import { initCanvasWebGL, redrawWebGLLines } from "./webGL";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
 import { initCanvasWebGPU, redrawWebGPULines } from "./webGPU";
+import { initCanvasWebGPUThreeJS, redrawWebGPULinesThreeJS } from "./webGPU_Three";
+// import { initCanvasWebGPUOrillusion, redrawWebGPULinesOrillusion } from "./webGPU_Orillusion";
 import * as context from "./contextMenu";
 import {
   active,
@@ -489,6 +491,12 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
     case "WebGPU":
       redrawWebGPULines(dataset, parcoords);
       break;
+    case "WebGPU-Three":
+      redrawWebGPULinesThreeJS(dataset, parcoords);
+      break;
+    // case "WebGPU-Orillusion":
+      // redrawWebGPULinesOrillusion(dataset, parcoords);
+      // break;
   }
 }
 
@@ -519,6 +527,12 @@ export async function setupTechnology(tech: string, parcoords: any) {
       recreateCanvas();
       await initCanvasWebGPU();
       break;
+    case "WebGPU-Three":
+      await initCanvasWebGPUThreeJS();
+      break;
+    // case "WebGPU-Orillusion":
+    //   await initCanvasWebGPUOrillusion();
+    //   break;
   }
 }
 
@@ -662,6 +676,22 @@ export function drawChart(content: any[]): void {
         })
         .catch((err) => console.error("WebGPU init failed:", err));
       break;
+    
+    case "WebGPU-Three":
+      initCanvasWebGPUThreeJS()
+        .then(() => {
+          redrawWebGPULinesThreeJS(parcoords.newDataset, parcoords);
+        })
+        .catch((err) => console.error("WebGPU-Three init failed:", err));
+      break;
+
+    // case "WebGPU-Orillusion":
+    //   initCanvasWebGPUOrillusion()
+    //     .then(() => {
+    //       redrawWebGPULinesOrillusion(parcoords.newDataset, parcoords);
+    //     })
+    //     .catch((err) => console.error("WebGPU-Orillusion init failed:", err));
+    //   break;
   }
 
   (window as any).onclick = () => {
