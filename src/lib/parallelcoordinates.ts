@@ -46,6 +46,7 @@ import * as api from "./helperApiFunc";
 import * as icon from "./icons/icons";
 import * as toolbar from "./toolbar";
 import * as utils from "./utils";
+import { initPixiCanvas2D, redrawPixiCanvasLines } from "./canvas2dPixi";
 
 declare const window: any;
 
@@ -473,6 +474,9 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
     case "Canvas2D":
       redrawCanvasLines(dataset, parcoords);
       break;
+    case "Canvas2DPixi":
+      redrawPixiCanvasLines(parcoords.newDataset, parcoords);
+      break;
     case "SVG-DOM":
       redrawSvgLines(svg, dataset, parcoords);
       break;
@@ -489,11 +493,16 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
 }
 
 export async function setupTechnology(tech: string, parcoords: any) {
+  const dpr = window.devicePixelRatio || 1;
+
   switch (tech) {
     case "Canvas2D":
       recreateCanvas();
-      const dpr = window.devicePixelRatio || 1;
       initCanvas2D(dpr);
+      break;
+    case "Canvas2DPixi":
+      recreateCanvas();
+      initPixiCanvas2D(dpr);
       break;
     case "SVG-DOM":
       // SVG setup if needed
@@ -619,6 +628,10 @@ export function drawChart(content: any[]): void {
     case "Canvas2D":
       initCanvas2D(dpr);
       redrawCanvasLines(parcoords.newDataset, parcoords);
+      break;
+    case "Canvas2DPixi":
+      initPixiCanvas2D(dpr);
+      redrawPixiCanvasLines(parcoords.newDataset, parcoords);
       break;
     case "SVG-DOM":
       // The setActivePathLines function call is causing interactivity in SVG mode
