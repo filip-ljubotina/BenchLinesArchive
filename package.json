@@ -53,6 +53,8 @@
     "d3-transition": "^3.0.1",
     "mini-svg-data-uri": "^1.4.4",
     "pixi.js": "^8.14.3",
+    "pixi.js-legacy": "^7.4.3",
+    "rollup-plugin-polyfill-node": "^0.13.0",
     "three": "^0.181.2",
     "xml-formatter": "^3.6.4"
   }
