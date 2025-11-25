@@ -21,7 +21,6 @@ let scene: Scene3D;
 let camera: Camera3D;
 let view: View3D;
 let graphic3D: Graphic3D;
-let shapeMaker: Shape3DMaker;  // The maker instance (not Shape3DRenderer)
 
 function getPolylinePoints(d: any, parcoords: any): number[] {
   const pts: number[] = [];
