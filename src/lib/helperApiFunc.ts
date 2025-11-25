@@ -185,6 +185,8 @@ export function getAllWebTechOptions(): GraphicsWebTech[] {
     "WebGLThree",
     "WebGPU",
     "WebGPU-Three",
+    "WebGPU-Pixi",
+    "WebGPU-Orillusion",
   ];
 }
 
