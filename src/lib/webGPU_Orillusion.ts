@@ -27,8 +27,6 @@ function getPolylinePoints(d: any, parcoords: any): number[] {
   const pts: number[] = [];
   const height = canvasEl.clientHeight;
   parcoords.newFeatures.forEach((name: string) => {
-    // const x = parcoords.dragging[name] ?? parcoords.xScales(name);
-    // const y = height - parcoords.yScales[name](d[name]);
     const width = canvasEl.clientWidth;
     const x = (parcoords.dragging[name] ?? parcoords.xScales(name)) - width / 2;
     const y = height - parcoords.yScales[name](d[name]) - height / 2;
