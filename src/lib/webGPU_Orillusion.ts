@@ -8,10 +8,7 @@ import {
   Object3D,
 } from '@orillusion/core';
 import { 
-  Graphic3D,  // Optional for debug
-  Shape3DMaker, 
-  Path3DShape3D,  // For path methods if needed
-  Shape3D, 
+  Graphic3D,
 } from '@orillusion/graphic';
 import { canvasEl } from "./globals";
 import { getLineName } from "./brush";
@@ -28,22 +25,40 @@ function getPolylinePoints(d: any, parcoords: any): number[] {
   parcoords.newFeatures.forEach((name: string) => {
     const width = canvasEl.clientWidth;
     const x = (parcoords.dragging[name] ?? parcoords.xScales(name)) - width / 2;
-    const y = height - parcoords.yScales[name](d[name]) - height / 2;
+    const y = height + 40 - parcoords.yScales[name](d[name]) - height / 2;
     pts.push(x, y, 0);
   });
   return pts;
 }
 
 export async function initCanvasWebGPUOrillusion() {
+    const dpr = window.devicePixelRatio || 1;
     const width = canvasEl.clientWidth;
     const height = canvasEl.clientHeight;
 
-    await Engine3D.init();
+    await Engine3D.init({
+      canvasConfig: { canvas: canvasEl }, 
+    });
     scene = new Scene3D();
     // Camera setup (unchanged)
     let cameraObj = new Object3D();
     camera = cameraObj.addComponent(Camera3D);
-    camera.orthoOffCenter(0, width, height, 0, -1, 1);
+    // camera.orthoOffCenter(
+    //   0, // left	-	The minimum value of the x-axis of the viewing frustum
+    //   width, // right	-	The maximum value of the x-axis of the viewing frustum
+    //   height, // bottom	-	The minimum value of the y-axis of the viewing frustum
+    //   0, //top	-	The maximum value of the y-axis of the viewing frustum
+    //   -1, // near	-	The z value of the near clipping plane of the viewing frustum
+    //   1 // far	-	The z value of the far clipping plane of the viewing frustum
+    // );
+    camera.orthoOffCenter(
+      -width / 2,
+      width / 2,
+      height / 2,
+      -height / 2,
+      -1,
+      1
+    );
     scene.addChild(cameraObj);
     view = new View3D();
     view.scene = scene;
@@ -65,7 +80,7 @@ export function redrawWebGPULinesOrillusion(dataset: any[], parcoords: any) {
   for (const d of dataset) {
     const id = getLineName(d);
     const active = lineState[id]?.active ?? true;
-    const points = getPolylinePoints(d, parcoords);
+    const points = getPolylinePoints(d, parcoords);    
 
     if (points.length < 6) continue;
 
@@ -81,4 +96,18 @@ export function redrawWebGPULinesOrillusion(dataset: any[], parcoords: any) {
 
     graphic3D.drawLines(id, vectors, color);
   }
+
+  // log active and inactive lines
+  let activeCount = 0;
+  let inactiveCount = 0;
+  for (const d of dataset) {
+    const id = getLineName(d);
+    const active = lineState[id]?.active ?? true;
+    if (active) {
+      activeCount++;
+    } else {
+      inactiveCount++;
+    }
+  }
+  console.log(`Orillusion WebGPU: Active lines: ${activeCount}, Inactive lines: ${inactiveCount}`);
 }

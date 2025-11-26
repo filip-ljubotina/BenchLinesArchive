@@ -495,9 +495,9 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
     case "WebGPU-Three":
       redrawWebGPULinesThreeJS(dataset, parcoords);
       break;
-    // case "WebGPU-Orillusion":
-    // redrawWebGPULinesOrillusion(dataset, parcoords);
-    // break;
+    case "WebGPU-Orillusion":
+      redrawWebGPULinesOrillusion(dataset, parcoords);
+      break;
   }
 }
 
