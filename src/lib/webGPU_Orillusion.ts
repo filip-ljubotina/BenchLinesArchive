@@ -109,5 +109,5 @@ export function redrawWebGPULinesOrillusion(dataset: any[], parcoords: any) {
       inactiveCount++;
     }
   }
-  console.log(`Orillusion WebGPU: Active lines: ${activeCount}, Inactive lines: ${inactiveCount}`);
+  // console.log(`Orillusion WebGPU: Active lines: ${activeCount}, Inactive lines: ${inactiveCount}`);
 }
