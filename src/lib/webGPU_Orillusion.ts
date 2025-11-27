@@ -39,18 +39,10 @@ export async function initCanvasWebGPUOrillusion() {
     await Engine3D.init({
       canvasConfig: { canvas: canvasEl }, 
     });
+    console.log("Orillusion WebGPU initialized");
     scene = new Scene3D();
-    // Camera setup (unchanged)
     let cameraObj = new Object3D();
     camera = cameraObj.addComponent(Camera3D);
-    // camera.orthoOffCenter(
-    //   0, // left	-	The minimum value of the x-axis of the viewing frustum
-    //   width, // right	-	The maximum value of the x-axis of the viewing frustum
-    //   height, // bottom	-	The minimum value of the y-axis of the viewing frustum
-    //   0, //top	-	The maximum value of the y-axis of the viewing frustum
-    //   -1, // near	-	The z value of the near clipping plane of the viewing frustum
-    //   1 // far	-	The z value of the far clipping plane of the viewing frustum
-    // );
     camera.orthoOffCenter(
       -width / 2,
       width / 2,
@@ -65,8 +57,8 @@ export async function initCanvasWebGPUOrillusion() {
     view.camera = camera;
     graphic3D = new Graphic3D();
     scene.addChild(graphic3D);
-
     Engine3D.startRenderView(view);
+    console.log("Orillusion WebGPU rendering started");
     return view;
 }
 
