@@ -90,6 +90,7 @@ export async function initCanvasWebGPUOrillusion() {
     scene.addChild(graphic3D);
     // Engine3D.startRenderView(view);
     // https://github.com/Orillusion/orillusion/issues/488
+    // https://github.com/Orillusion/orillusion/issues/402
     Engine3D.setting.gi.autoRenderProbe = true;
     console.log("Orillusion WebGPU rendering started");
     return view;
