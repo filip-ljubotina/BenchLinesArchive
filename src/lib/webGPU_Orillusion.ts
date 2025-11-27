@@ -18,6 +18,7 @@ let scene: Scene3D;
 let camera: Camera3D;
 let view: View3D;
 let graphic3D: Graphic3D;
+let initialized: boolean = false;
 
 function getPolylinePoints(d: any, parcoords: any): number[] {
   const pts: number[] = [];
@@ -35,7 +36,37 @@ export async function initCanvasWebGPUOrillusion() {
     const dpr = window.devicePixelRatio || 1;
     const width = canvasEl.clientWidth;
     const height = canvasEl.clientHeight;
+    console.log("Canvas size:", width, height);
 
+    if (initialized) {
+      Engine3D.pause();
+      console.log("Orillusion WebGPU re-initializing...");
+      scene = new Scene3D();
+      let cameraObj = new Object3D();
+      camera = cameraObj.addComponent(Camera3D);
+      camera.orthoOffCenter(
+        -width / 2,
+        width / 2,
+        height / 2,
+        -height / 2,
+        -1,
+        1
+      );
+      scene.addChild(cameraObj);
+      view = new View3D();
+      view.scene = scene;
+      view.camera = camera;
+      graphic3D = new Graphic3D();
+      scene.addChild(graphic3D);
+      // Engine3D.startRenderView(view);
+      Engine3D.resume();
+      // https://github.com/Orillusion/orillusion/issues/488
+      // Engine3D.setting.gi.autoRenderProbe = true;
+      console.log("Orillusion WebGPU rendering started");
+      return view;
+    }
+    else{
+    initialized = true;
     await Engine3D.init({
       canvasConfig: { canvas: canvasEl }, 
     });
@@ -57,17 +88,22 @@ export async function initCanvasWebGPUOrillusion() {
     view.camera = camera;
     graphic3D = new Graphic3D();
     scene.addChild(graphic3D);
-    Engine3D.startRenderView(view);
+    // Engine3D.startRenderView(view);
+    // https://github.com/Orillusion/orillusion/issues/488
+    Engine3D.setting.gi.autoRenderProbe = true;
     console.log("Orillusion WebGPU rendering started");
     return view;
+  }
 }
 
 export function redrawWebGPULinesOrillusion(dataset: any[], parcoords: any) {
   if (!scene || !graphic3D) return;
-
+  Engine3D.startRenderView(view);
+  Engine3D.pause();
   scene.removeChild(graphic3D);
   graphic3D = new Graphic3D();
   scene.addChild(graphic3D);
+  Engine3D.resume();
 
   for (const d of dataset) {
     const id = getLineName(d);
