@@ -17,11 +17,17 @@ async function bundle() {
       }),
       rollupCommonJs(),
       nodePolyfills(),
-      rollupTypeScript({ tsconfig: './tsconfig.json' }),
+      rollupTypeScript({
+        // ✅ NO tsconfig - use inline options only
+        declaration: false,
+        declarationMap: false,
+        sourceMap: true,
+        moduleResolution: 'node',
+        target: 'es2015',
+        module: 'esnext',
+        allowSyntheticDefaultImports: true,
+      }),
     ],
-    output: {
-      preserveModules: true,
-    }
   });
 
   const minPlugins = [rollupTerser()];
@@ -32,26 +38,29 @@ async function bundle() {
     const config = [
       { extension: 'js', plugins: [] },
       { extension: 'min.js', plugins: minPlugins },
-      { extension: 'min.js', plugins: gZipPlugins },
+      { extension: 'min.js.gz', plugins: gZipPlugins },
     ];
     return config.map((conf) => bundle.write({
-      file:`${location}/spcd3.${conf.extension}`,
+      file: `${location}/spcd3.${conf.extension}`,
       format,
       name: 'spcd3',
       plugins: conf.plugins,
       sourcemap: true,
+      inlineDynamicImports: true,
     }).then(() => {
-      const fileData = fs.readFileSync(`${location}/spcd3.${conf.extension}`, 'utf8');
+      const filePath = `${location}/spcd3.${conf.extension}`;
+      const fileData = fs.readFileSync(filePath, 'utf8');
       const formatString = format === 'iife' ? 'IIFE' : format === 'esm' ? 'ESM' : format === 'cjs' ? 'CommonJS' : '';
       const dataWithHeaderLine = `// SPCD3 version 1.0.0 ${formatString}\n` + fileData;
-      fs.writeFileSync(`${location}/spcd3.${conf.extension}`, dataWithHeaderLine, 'utf8');
-    }))
+      fs.writeFileSync(filePath, dataWithHeaderLine, 'utf8');
+    }));
   }
 
   return Promise.all([
-      ...writeLib('esm'),
-      ...writeLib('iife'),
-      ...writeLib('cjs')])
+    ...writeLib('esm'),
+    ...writeLib('iife'),
+    ...writeLib('cjs')
+  ]);
 }
 
-module.exports = {bundle}
+module.exports = {bundle};
