@@ -4,14 +4,19 @@ const rollupTypeScript = require("@rollup/plugin-typescript");
 const {default: rollupNodeResolve} = require("@rollup/plugin-node-resolve");
 const {terser: rollupTerser} = require("rollup-plugin-terser");
 const {default: rollupGzip} = require("rollup-plugin-gzip");
+const nodePolyfills = require("rollup-plugin-polyfill-node");
 const fs = require("fs");
 
 async function bundle() {
   const bundle = await rollup.rollup({
     input: './src/lib/index.ts',
     plugins: [
-      rollupNodeResolve({ browser: true }),
+      rollupNodeResolve({ 
+        browser: true,
+        preferBuiltins: false 
+      }),
       rollupCommonJs(),
+      nodePolyfills(),
       rollupTypeScript({ tsconfig: './tsconfig.json' }),
     ],
     output: {
