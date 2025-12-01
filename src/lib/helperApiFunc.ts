@@ -182,11 +182,12 @@ export function getAllWebTechOptions(): GraphicsWebTech[] {
     "Canvas2DPixi",
     "SVG-DOM",
     "WebGL",
-    "WebGL2",
     "WebGLThree",
     "WebGLPixi",
     "WebGPU",
     "WebGPU-Three",
+    "WebGPU-Pixi",
+    // "WebGPU-Orillusion",
   ];
 }
 

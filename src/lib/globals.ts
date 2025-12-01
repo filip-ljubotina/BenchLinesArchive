@@ -37,11 +37,13 @@ export type GraphicsWebTech =
   | "Canvas2DPixi"
   | "SVG-DOM"
   | "WebGL"
-  | "WebGL2"
+  | "WebGLThree"
   | "WebGPU"
   | "WebGPU-Three"
   | "WebGLThree"
-  |  "WebGLPixi";
+  |  "WebGLPixi"
+  | "WebGPU-Pixi";
+
 export let currWebTech: GraphicsWebTech = "SVG-DOM";
 export type DatasetName =
   | "student_dataset"

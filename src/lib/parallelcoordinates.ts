@@ -5,14 +5,13 @@ import "d3-transition";
 import * as brush from "./brush";
 import { initCanvas2D, redrawCanvasLines } from "./canvas2d";
 import { initCanvasWebGL, redrawWebGLLines } from "./webGL";
+import { initPixiCanvas2D, redrawPixiCanvasLines } from "./canvas2dPixi";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
 import { initCanvasWebGLPixiJS, redrawWebGLLinesPixiJS } from "./webGL_pixi";
 import { initCanvasWebGPU, redrawWebGPULines } from "./webGPU";
-import {
-  initCanvasWebGPUThreeJS,
-  redrawWebGPULinesThreeJS,
-} from "./webGPU_Three";
+import { initCanvasWebGPUThreeJS, redrawWebGPULinesThreeJS } from "./webGPU_Three";
 // import { initCanvasWebGPUOrillusion, redrawWebGPULinesOrillusion } from "./webGPU_Orillusion";
+import { initCanvasWebGPUPixi, redrawWebGPUPixiLines } from "./webGPU_Pixi";
 import * as context from "./contextMenu";
 import {
   active,
@@ -52,8 +51,6 @@ import * as api from "./helperApiFunc";
 import * as icon from "./icons/icons";
 import * as toolbar from "./toolbar";
 import * as utils from "./utils";
-import { initPixiCanvas2D, redrawPixiCanvasLines } from "./canvas2dPixi";
-import { initCanvasWebGL2, redrawWebGL2Lines } from "./webGL2";
 
 declare const window: any;
 
@@ -473,7 +470,6 @@ export function recreateCanvas() {
   plot.select("#pc_canvas").remove();
   const { dpr } = createHiDPICanvas(plot, width, 360);
   if (currWebTech === "Canvas2D") initCanvas2D(dpr);
-  // else if (currWebTech === "WebGPU") initCanvasWebGPU();
 }
 
 export function redrawPolylines(dataset: any[], parcoords: any) {
@@ -490,9 +486,6 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
     case "WebGL":
       redrawWebGLLines(dataset, parcoords);
       break;
-    case "WebGL2":
-      redrawWebGL2Lines(dataset, parcoords);
-      break;
     case "WebGLThree":
       redrawWebGLLinesThreeJS(dataset, parcoords);
       break;
@@ -506,8 +499,11 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
       redrawWebGPULinesThreeJS(dataset, parcoords);
       break;
     // case "WebGPU-Orillusion":
-    // redrawWebGPULinesOrillusion(dataset, parcoords);
-    // break;
+    //   redrawWebGPULinesOrillusion(dataset, parcoords);
+    //   break;
+    case "WebGPU-Pixi":
+      redrawWebGPUPixiLines(dataset, parcoords);
+      break;
   }
 }
 
@@ -530,10 +526,6 @@ export async function setupTechnology(tech: string) {
       recreateCanvas();
       initCanvasWebGL();
       break;
-    case "WebGL2":
-      recreateCanvas();
-      initCanvasWebGL2();
-      break;
     case "WebGLThree":
       recreateCanvas();
       initCanvasWebGLThreeJS();
@@ -547,11 +539,17 @@ export async function setupTechnology(tech: string) {
       await initCanvasWebGPU();
       break;
     case "WebGPU-Three":
+      recreateCanvas();
       await initCanvasWebGPUThreeJS();
       break;
     // case "WebGPU-Orillusion":
+    //   recreateCanvas();
     //   await initCanvasWebGPUOrillusion();
     //   break;
+    case "WebGPU-Pixi":
+      recreateCanvas();
+      await initCanvasWebGPUPixi();
+      break;
   }
 }
 
@@ -682,10 +680,6 @@ export function drawChart(content: any[]): void {
       initCanvasWebGL();
       redrawWebGLLines(parcoords.newDataset, parcoords);
       break;
-    case "WebGL2":
-      initCanvasWebGL2();
-      redrawWebGL2Lines(parcoords.newDataset, parcoords);
-      break;
     case "WebGLThree":
       initCanvasWebGLThreeJS();
       redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
@@ -703,7 +697,6 @@ export function drawChart(content: any[]): void {
         })
         .catch((err) => console.error("WebGPU init failed:", err));
       break;
-
     case "WebGPU-Three":
       initCanvasWebGPUThreeJS()
         .then(() => {
@@ -719,6 +712,14 @@ export function drawChart(content: any[]): void {
     //     })
     //     .catch((err) => console.error("WebGPU-Orillusion init failed:", err));
     //   break;
+    
+    case "WebGPU-Pixi":
+      initCanvasWebGPUPixi()
+        .then(() => {
+          redrawWebGPUPixiLines(parcoords.newDataset, parcoords);
+        })
+        .catch((err) => console.error("WebGPU-Pixi init failed:", err));
+      break;
   }
 
   (window as any).onclick = () => {
