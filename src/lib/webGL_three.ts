@@ -8,13 +8,9 @@ import { canvasEl, lineState } from "./globals";
 let scene: THREE.Scene;
 let camera: THREE.OrthographicCamera;
 let renderer: THREE.WebGLRenderer;
-let lines: Line2;
+let lines: Line2; 
 let lineMaterial: LineMaterial;
 let lineGeometry: LineSegmentsGeometry;
-
-let maxVertices = 100000 * 2;
-let positions = new Float32Array(maxVertices * 3);
-let colors = new Float32Array(maxVertices * 3);
 
 export function initCanvasWebGLThreeJS() {
   const width = canvasEl.clientWidth;
@@ -41,44 +37,49 @@ export function initCanvasWebGLThreeJS() {
   return renderer;
 }
 
-function getPolylinePoints(d: any, parcoords: any): number[] {
-  const pts: number[] = [];
-  const height = canvasEl.clientHeight;
-  parcoords.newFeatures.forEach((name: string) => {
-    const x = parcoords.dragging[name] ?? parcoords.xScales(name);
-    const y = height - parcoords.yScales[name](d[name]);
-    pts.push(x, y, 0);
-  });
-  return pts;
-}
-
 export function redrawWebGLLinesThreeJS(dataset: any[], parcoords: any) {
   if (!renderer || !scene || !lines) return;
 
-  let offset = 0;
+  const height = canvasEl.clientHeight;
 
+  let totalSegments = 0;
+  for (const d of dataset) {
+    const n = parcoords.newFeatures.length;
+    if (n >= 2) totalSegments += n - 1;
+  }
+
+  const positions = new Float32Array(totalSegments * 2 * 3);
+  const colors = new Float32Array(totalSegments * 2 * 3);
+
+  let offset = 0;
   for (const d of dataset) {
     const id = getLineName(d);
     const active = lineState[id]?.active ?? true;
-    const pts = getPolylinePoints(d, parcoords);
-    if (pts.length < 6) continue;
+    const color = active ? [0.5, 0.75, 0.84] : [0.92, 0.92, 0.92];
 
-    const color = active ? [0.5, 0.75, 0.84] : [0.92, 0.92, 0.92]; // RGB normalized
+    // Compute polyline points
+    const pts: [number, number, number][] = parcoords.newFeatures.map((name: string) => {
+      const x = parcoords.dragging[name] ?? parcoords.xScales(name);
+      const y = height - parcoords.yScales[name](d[name]);
+      return [x, y, 0];
+    });
+    if (pts.length < 2) continue;
 
-    // convert polyline to segments like we do in webgl
-    for (let i = 0; i < pts.length - 3; i += 3) {
-      positions.set(pts.slice(i, i + 3), offset * 3);
-      colors.set(color, offset * 3);
-      offset++;
+    for (let i = 0; i < pts.length - 1; i++) {
+      // Vertex 1
+      positions.set(pts[i], offset);
+      colors.set(color, offset);
+      offset += 3;
 
-      positions.set(pts.slice(i + 3, i + 6), offset * 3);
-      colors.set(color, offset * 3);
-      offset++;
+      // Vertex 2
+      positions.set(pts[i + 1], offset);
+      colors.set(color, offset);
+      offset += 3;
     }
   }
 
-  lineGeometry.setPositions(positions.subarray(0, offset * 3));
-  lineGeometry.setColors(colors.subarray(0, offset * 3));
+  lineGeometry.setPositions(positions);
+  lineGeometry.setColors(colors);
   lineMaterial.needsUpdate = true;
 
   renderer.render(scene, camera);
