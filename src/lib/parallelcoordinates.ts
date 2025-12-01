@@ -498,6 +498,7 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
       break;
     case "WebGLPixi":
       redrawWebGLLinesPixiJS(dataset, parcoords);
+      break;
     case "WebGPU":
       redrawWebGPULines(dataset, parcoords);
       break;
