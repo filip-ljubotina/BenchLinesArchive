@@ -41,7 +41,6 @@ export type GraphicsWebTech =
   | "WebGPU"
   | "WebGPU-Three"
   | "WebGLThree"
-  |  "WebGLPixi"
   | "WebGPU-Pixi";
 
 export let currWebTech: GraphicsWebTech = "SVG-DOM";

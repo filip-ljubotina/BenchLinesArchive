@@ -7,7 +7,6 @@ import { initCanvas2D, redrawCanvasLines } from "./canvas2d";
 import { initCanvasWebGL, redrawWebGLLines } from "./webGL";
 import { initPixiCanvas2D, redrawPixiCanvasLines } from "./canvas2dPixi";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
-import { initCanvasWebGLPixiJS, redrawWebGLLinesPixiJS } from "./webGL_pixi";
 import { initCanvasWebGPU, redrawWebGPULines } from "./webGPU";
 import {
   initCanvasWebGPUThreeJS,
@@ -492,9 +491,6 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
     case "WebGLThree":
       redrawWebGLLinesThreeJS(dataset, parcoords);
       break;
-    case "WebGLPixi":
-      redrawWebGLLinesPixiJS(dataset, parcoords);
-      break;
     case "WebGPU":
       redrawWebGPULines(dataset, parcoords);
       break;
@@ -532,10 +528,6 @@ export async function setupTechnology(tech: string) {
     case "WebGLThree":
       recreateCanvas();
       initCanvasWebGLThreeJS();
-      break;
-    case "WebGLPixi":
-      recreateCanvas();
-      initCanvasWebGLPixiJS();
       break;
     case "WebGPU":
       recreateCanvas();
@@ -686,10 +678,6 @@ export function drawChart(content: any[]): void {
     case "WebGLThree":
       initCanvasWebGLThreeJS();
       redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
-      break;
-    case "WebGLPixi":
-      initCanvasWebGLPixiJS();
-      redrawWebGLLinesPixiJS(parcoords.newDataset, parcoords);
       break;
     case "WebGPU":
       // console.log("Using WebGPU rendering from DrawChart");
