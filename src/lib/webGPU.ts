@@ -273,78 +273,176 @@ export async function initCanvasWebGPU() {
   
 }
 
-export function redrawWebGPULines(dataset: any[], parcoords: any) {
+// export function redrawWebGPULines(dataset: any[], parcoords: any) {
 
+//   if (!device) {
+//     throw new Error("GPU device is not initialized. Call initCanvasWebGPU first.");
+//   }
+
+//   // Create command encoder to encode GPU commands
+//   encoder = device.createCommandEncoder();
+
+//   // Begin a render pass
+//   pass = encoder.beginRenderPass({
+//     colorAttachments: [{
+//       view: context.getCurrentTexture().createView(),
+//       loadOp: "clear",
+//       // clear to transparent
+//       clearValue: { r: 0, g: 0, b: 0, a: 0 },
+//       storeOp: "store",
+//     }],
+//   });
+
+//   // The devicePixelRatio of Window interface returns the ratio of the resolution in physical pixels 
+//   // to the resolution in CSS pixels for the current display device.
+//   const dpr = window.devicePixelRatio || 1;
+//   // Get canvas dimensions
+//   const canvasWidth = canvasEl.width;
+//   const canvasHeight = canvasEl.height;
+
+//   let activeCount = 0;
+//   let inactiveCount = 0;
+
+//   // console.log("Context:", context);
+//   for (const d of dataset) {
+//     const id = getLineName(d);
+//     // Determine if the line is active or inactive
+//     const active = lineState[id]?.active ?? true;
+
+//     if (active) {
+//       activeCount++;
+//     } else {
+//       inactiveCount++;
+//     }
+
+
+//     const pts = getPolylinePoints(d, parcoords, dpr);
+//     if (pts.length < 2) continue;
+
+//     // Create a vertex buffer for the polyline
+//     const verts = new Float32Array(pts.length * 2);
+//     for (let i = 0; i < pts.length; ++i) {
+//       const x = pts[i][0];
+//       const y = pts[i][1];
+//       const xClip = (x / canvasWidth) * 2 - 1;
+//       const yClip = 1 - (y / canvasHeight) * 2;
+//       verts[i * 2 + 0] = xClip;
+//       verts[i * 2 + 1] = yClip;
+//     }
+
+//     const vertexBuffer = device.createBuffer({
+//       label: "polyline-vertices",
+//       size: verts.byteLength,
+//       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+//     });
+
+//     device.queue.writeBuffer(vertexBuffer, 0, verts);
+//     pass.setPipeline(pipeline);
+//     pass.setBindGroup(0, active ? activeBindGroup : inactiveBindGroup);
+//     pass.setVertexBuffer(0, vertexBuffer);
+//     pass.draw(verts.length / 2, 1, 0, 0);
+//   }
+
+//   // console.log(`Active lines: ${activeCount}, Inactive lines: ${inactiveCount}`);
+
+//   pass.end();
+//   device.queue.submit([encoder.finish()]);
+// }
+
+export function redrawWebGPULines(dataset: any[], parcoords: any) {
   if (!device) {
     throw new Error("GPU device is not initialized. Call initCanvasWebGPU first.");
   }
 
-  // Create command encoder to encode GPU commands
+  // --- 1. Prepare Command Encoder and Render Pass ---
   encoder = device.createCommandEncoder();
-
-  // Begin a render pass
   pass = encoder.beginRenderPass({
     colorAttachments: [{
       view: context.getCurrentTexture().createView(),
       loadOp: "clear",
-      // clear to transparent
       clearValue: { r: 0, g: 0, b: 0, a: 0 },
       storeOp: "store",
     }],
   });
 
-  // The devicePixelRatio of Window interface returns the ratio of the resolution in physical pixels 
-  // to the resolution in CSS pixels for the current display device.
   const dpr = window.devicePixelRatio || 1;
-  // Get canvas dimensions
   const canvasWidth = canvasEl.width;
   const canvasHeight = canvasEl.height;
 
-  let activeCount = 0;
-  let inactiveCount = 0;
+  // --- 2. Collect All Line Data ---
+  const allLines: { pts: [number, number][], active: boolean }[] = [];
+  let totalVertexCount = 0;
 
-  // console.log("Context:", context);
   for (const d of dataset) {
     const id = getLineName(d);
-    // Determine if the line is active or inactive
     const active = lineState[id]?.active ?? true;
-
-    if (active) {
-      activeCount++;
-    } else {
-      inactiveCount++;
-    }
-
-
     const pts = getPolylinePoints(d, parcoords, dpr);
-    if (pts.length < 2) continue;
-
-    // Create a vertex buffer for the polyline
-    const verts = new Float32Array(pts.length * 2);
-    for (let i = 0; i < pts.length; ++i) {
-      const x = pts[i][0];
-      const y = pts[i][1];
-      const xClip = (x / canvasWidth) * 2 - 1;
-      const yClip = 1 - (y / canvasHeight) * 2;
-      verts[i * 2 + 0] = xClip;
-      verts[i * 2 + 1] = yClip;
+    
+    if (pts.length >= 2) {
+      allLines.push({ pts, active });
+      totalVertexCount += pts.length;
     }
-
-    const vertexBuffer = device.createBuffer({
-      label: "polyline-vertices",
-      size: verts.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-    });
-
-    device.queue.writeBuffer(vertexBuffer, 0, verts);
-    pass.setPipeline(pipeline);
-    pass.setBindGroup(0, active ? activeBindGroup : inactiveBindGroup);
-    pass.setVertexBuffer(0, vertexBuffer);
-    pass.draw(verts.length / 2, 1, 0, 0);
   }
 
-  // console.log(`Active lines: ${activeCount}, Inactive lines: ${inactiveCount}`);
+  if (totalVertexCount === 0) {
+    // If no lines to draw, just finish the pass and submit an empty command buffer
+    pass.end();
+    device.queue.submit([encoder.finish()]);
+    return;
+  }
 
+  // --- 3. Create and Write to a Single Vertex Buffer (The Super-Buffer) ---
+  // Each vertex is 2 floats, 4 bytes each: 8 bytes per vertex.
+  const totalBufferSize = totalVertexCount * 2 * 4; 
+  const allVerts = new Float32Array(totalVertexCount * 2); 
+  let currentOffset = 0;
+
+  for (const line of allLines) {
+    for (const pt of line.pts) {
+      const x = pt[0];
+      const y = pt[1];
+      const xClip = (x / canvasWidth) * 2 - 1;
+      const yClip = 1 - (y / canvasHeight) * 2;
+      
+      // Store x and y in the large array
+      allVerts[currentOffset++] = xClip;
+      allVerts[currentOffset++] = yClip;
+    }
+  }
+
+  // Create the single buffer
+  const vertexBuffer = device.createBuffer({
+    label: "all-polyline-vertices",
+    size: totalBufferSize,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+  });
+
+  // Write all data to the GPU in a single call
+  device.queue.writeBuffer(vertexBuffer, 0, allVerts);
+
+  // --- 4. Configure Pipeline and Draw with Offsets ---
+  
+  pass.setPipeline(pipeline);
+  // Set the one and only vertex buffer for all subsequent draws
+  pass.setVertexBuffer(0, vertexBuffer); 
+
+  let vertexOffset = 0;
+  for (const line of allLines) {
+    const lineVertexCount = line.pts.length;
+
+    // Set the appropriate color (Bind Group) for this line
+    pass.setBindGroup(0, line.active ? activeBindGroup : inactiveBindGroup);
+
+    // Draw a subset of the super-buffer using the vertexOffset
+    // lineVertexCount is the number of vertices for this single line
+    // vertexOffset is the starting position (in vertices) within the super-buffer
+    pass.draw(lineVertexCount, 1, vertexOffset, 0);
+
+    // Increment the offset for the next line's starting position
+    vertexOffset += lineVertexCount;
+  }
+
+  // --- 5. Finalize and Submit ---
   pass.end();
   device.queue.submit([encoder.finish()]);
 }
