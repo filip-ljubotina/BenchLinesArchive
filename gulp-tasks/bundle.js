@@ -18,10 +18,7 @@ async function bundle() {
       rollupCommonJs(),
       nodePolyfills(),
       rollupTypeScript({ tsconfig: './tsconfig.json' }),
-    ],
-    output: {
-      preserveModules: true,
-    }
+    ]
   });
 
   const minPlugins = [rollupTerser()];
@@ -40,6 +37,7 @@ async function bundle() {
       name: 'spcd3',
       plugins: conf.plugins,
       sourcemap: true,
+      inlineDynamicImports: true,
     }).then(() => {
       const fileData = fs.readFileSync(`${location}/spcd3.${conf.extension}`, 'utf8');
       const formatString = format === 'iife' ? 'IIFE' : format === 'esm' ? 'ESM' : format === 'cjs' ? 'CommonJS' : '';
