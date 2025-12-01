@@ -9,7 +9,10 @@ import { initPixiCanvas2D, redrawPixiCanvasLines } from "./canvas2dPixi";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
 import { initCanvasWebGLPixiJS, redrawWebGLLinesPixiJS } from "./webGL_pixi";
 import { initCanvasWebGPU, redrawWebGPULines } from "./webGPU";
-import { initCanvasWebGPUThreeJS, redrawWebGPULinesThreeJS } from "./webGPU_Three";
+import {
+  initCanvasWebGPUThreeJS,
+  redrawWebGPULinesThreeJS,
+} from "./webGPU_Three";
 // import { initCanvasWebGPUOrillusion, redrawWebGPULinesOrillusion } from "./webGPU_Orillusion";
 import { initCanvasWebGPUPixi, redrawWebGPUPixiLines } from "./webGPU_Pixi";
 import * as context from "./contextMenu";
@@ -491,6 +494,7 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
       break;
     case "WebGLPixi":
       redrawWebGLLinesPixiJS(dataset, parcoords);
+      break;
     case "WebGPU":
       redrawWebGPULines(dataset, parcoords);
       break;
@@ -711,7 +715,7 @@ export function drawChart(content: any[]): void {
     //     })
     //     .catch((err) => console.error("WebGPU-Orillusion init failed:", err));
     //   break;
-    
+
     case "WebGPU-Pixi":
       initCanvasWebGPUPixi()
         .then(() => {
