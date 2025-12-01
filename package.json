@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "@orillusion/core": "^0.8.5-dev.9",
+    "@orillusion/graphic": "^0.2.7",
     "@webgpu/types": "^0.1.66",
     "d3-array": "^3.2.4",
     "d3-axis": "^3.0.0",
