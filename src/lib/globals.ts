@@ -38,9 +38,7 @@ export type GraphicsWebTech =
   | "SVG-DOM"
   | "WebGL"
   | "WebGLThree"
-  | "WebGL2"
   | "WebGPU"
-  // | "WebGPU2"
   | "WebGPU-Three"
   | "WebGPU-Pixi"
   // | "WebGPU-Orillusion";

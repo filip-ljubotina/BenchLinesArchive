@@ -6,10 +6,8 @@ import * as brush from "./brush";
 import { initCanvas2D, redrawCanvasLines } from "./canvas2d";
 import { initCanvasWebGL, redrawWebGLLines } from "./webGL";
 import { initPixiCanvas2D, redrawPixiCanvasLines } from "./canvas2dPixi";
-import { initCanvasWebGL2, redrawWebGL2Lines } from "./webGL2";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
 import { initCanvasWebGPU, redrawWebGPULines } from "./webGPU";
-// import { initCanvasWebGPU2, redrawWebGPULines2 } from "./webGPU2";
 import { initCanvasWebGPUThreeJS, redrawWebGPULinesThreeJS } from "./webGPU_Three";
 // import { initCanvasWebGPUOrillusion, redrawWebGPULinesOrillusion } from "./webGPU_Orillusion";
 import { initCanvasWebGPUPixi, redrawWebGPUPixiLines } from "./webGPU_Pixi";
@@ -487,9 +485,6 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
     case "WebGL":
       redrawWebGLLines(dataset, parcoords);
       break;
-    case "WebGL2":
-      redrawWebGL2Lines(dataset, parcoords);
-      break;
     case "WebGLThree":
       redrawWebGLLinesThreeJS(dataset, parcoords);
       break;
@@ -527,10 +522,6 @@ export async function setupTechnology(tech: string) {
       recreateCanvas();
       initCanvasWebGL();
       break;
-    case "WebGL2":
-      recreateCanvas();
-      initCanvasWebGL2();
-      break;
     case "WebGLThree":
       recreateCanvas();
       initCanvasWebGLThreeJS();
@@ -539,10 +530,6 @@ export async function setupTechnology(tech: string) {
       recreateCanvas();
       await initCanvasWebGPU();
       break;
-    // case "WebGPU2":
-    //   recreateCanvas();
-    //   await initCanvasWebGPU2();
-    //   break;
     case "WebGPU-Three":
       recreateCanvas();
       await initCanvasWebGPUThreeJS();
@@ -685,10 +672,6 @@ export function drawChart(content: any[]): void {
       initCanvasWebGL();
       redrawWebGLLines(parcoords.newDataset, parcoords);
       break;
-    case "WebGL2":
-      initCanvasWebGL2();
-      redrawWebGL2Lines(parcoords.newDataset, parcoords);
-      break;
     case "WebGLThree":
       initCanvasWebGLThreeJS();
       redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
@@ -702,15 +685,6 @@ export function drawChart(content: any[]): void {
         })
         .catch((err) => console.error("WebGPU init failed:", err));
       break;
-
-    // case "WebGPU2":
-    //   initCanvasWebGPU2()
-    //     .then(() => {
-    //       redrawWebGPULines2(parcoords.newDataset, parcoords);
-    //     })
-    //     .catch((err) => console.error("WebGPU2 init failed:", err));
-    //   break;
-
     case "WebGPU-Three":
       initCanvasWebGPUThreeJS()
         .then(() => {
