@@ -37,6 +37,7 @@ export type GraphicsWebTech =
   | "Canvas2DPixi"
   | "SVG-DOM"
   | "WebGL"
+  | "WebGL2"
   | "WebGPU"
   | "WebGPU-Three"
   | "WebGLThree"
