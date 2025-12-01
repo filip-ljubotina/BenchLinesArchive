@@ -38,6 +38,7 @@ export type GraphicsWebTech =
   | "SVG-DOM"
   | "WebGL"
   | "WebGLThree"
+  | "WebGL2"
   | "WebGPU"
   | "WebGPU-Three"
   | "WebGPU-Pixi"

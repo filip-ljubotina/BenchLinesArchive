@@ -50,6 +50,7 @@ import * as icon from "./icons/icons";
 import * as toolbar from "./toolbar";
 import * as utils from "./utils";
 import { initPixiCanvas2D, redrawPixiCanvasLines } from "./canvas2dPixi";
+import { initCanvasWebGL2, redrawWebGL2Lines } from "./webGL2";
 
 declare const window: any;
 
@@ -486,6 +487,9 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
     case "WebGL":
       redrawWebGLLines(dataset, parcoords);
       break;
+    case "WebGL2":
+      redrawWebGL2Lines(dataset, parcoords);
+      break;
     case "WebGLThree":
       redrawWebGLLinesThreeJS(dataset, parcoords);
       break;
@@ -522,6 +526,10 @@ export async function setupTechnology(tech: string) {
     case "WebGL":
       recreateCanvas();
       initCanvasWebGL();
+      break;
+    case "WebGL2":
+      recreateCanvas();
+      initCanvasWebGL2();
       break;
     case "WebGLThree":
       recreateCanvas();
@@ -672,6 +680,10 @@ export function drawChart(content: any[]): void {
     case "WebGL":
       initCanvasWebGL();
       redrawWebGLLines(parcoords.newDataset, parcoords);
+      break;
+    case "WebGL2":
+      initCanvasWebGL2();
+      redrawWebGL2Lines(parcoords.newDataset, parcoords);
       break;
     case "WebGLThree":
       initCanvasWebGLThreeJS();
