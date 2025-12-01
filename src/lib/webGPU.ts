@@ -3,347 +3,358 @@ import { getLineName } from "./brush";
 
 let device: GPUDevice;
 let pipeline: GPURenderPipeline;
-let pass: GPURenderPassEncoder;
-let encoder: GPUCommandEncoder;
-let activeBindGroup: GPUBindGroup;
-let inactiveBindGroup: GPUBindGroup;
 let context: GPUCanvasContext;
+let canvasFormat: GPUTextureFormat;
 
-function getPolylinePoints(d: any, parcoords: any, dpr: number): [number, number][] {
-  const pts: [number, number][] = [];
-  parcoords.newFeatures.forEach((name: string) => {
-    const x = (parcoords.dragging[name] ?? parcoords.xScales(name)) * dpr;
-    const y = parcoords.yScales[name](d[name]) * dpr;
-    pts.push([x, y]);
-  });
-  return pts;
+// Pre-allocated buffers
+let vertexBuffer: GPUBuffer | null = null;
+let indexBuffer: GPUBuffer | null = null;
+let uniformBuffer: GPUBuffer | null = null;
+let bindGroup: GPUBindGroup | null = null;
+
+// Staging arrays (CPU side)
+let vertexData: Float32Array<ArrayBuffer> | null = null;
+let indexData: Uint32Array<ArrayBuffer> | null = null;
+let vertexCapacity = 0;
+let indexCapacity = 0;
+
+// Cached values
+let dpr = 1;
+let width = 0;
+let height = 0;
+
+// Constants
+const FLOATS_PER_VERTEX = 6; // x, y, r, g, b, a
+const BYTES_PER_VERTEX = FLOATS_PER_VERTEX * 4;
+const PRIMITIVE_RESTART = 0xffffffff;
+
+// Colors
+const ACTIVE_R = 0 / 255;
+const ACTIVE_G = 129 / 255;
+const ACTIVE_B = 175 / 255;
+const ACTIVE_A = 0.5;
+const INACTIVE_R = 211 / 255;
+const INACTIVE_G = 211 / 255;
+const INACTIVE_B = 211 / 255;
+const INACTIVE_A = 0.4;
+
+const SHADER_CODE = `
+struct Uniforms {
+  resolution: vec2<f32>,
+};
+
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+
+struct VertexInput {
+  @location(0) position: vec2<f32>,
+  @location(1) color: vec4<f32>,
+};
+
+struct VertexOutput {
+  @builtin(position) position: vec4<f32>,
+  @location(0) color: vec4<f32>,
+};
+
+@vertex
+fn vs_main(input: VertexInput) -> VertexOutput {
+  var output: VertexOutput;
+  
+  // Convert from pixel coordinates to clip space
+  let x = (input.position.x / uniforms.resolution.x) * 2.0 - 1.0;
+  let y = 1.0 - (input.position.y / uniforms.resolution.y) * 2.0;
+  
+  output.position = vec4<f32>(x, y, 0.0, 1.0);
+  output.color = input.color;
+  return output;
 }
 
-export function initWebGPU() {
-  // Check if the GPU device is initialized
-  if (!device) throw new Error("GPU device is not initialized. Call initCanvasWebGPU first.");
+@fragment
+fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
+  // Premultiplied alpha
+  return vec4<f32>(input.color.rgb * input.color.a, input.color.a);
+}
+`;
 
-  // Get WebGPU context and configure it
-  context = canvasEl.getContext("webgpu");
-  const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-  
-  // Configure the context with device and format
-  context.configure({
-    device: device, // Use the GPU device initialized earlier
-    format: canvasFormat, // Use the preferred canvas format
+function ensureCapacity(
+  requiredVertices: number,
+  requiredIndices: number
+): void {
+  const requiredVertexBytes = requiredVertices * BYTES_PER_VERTEX;
+  const requiredIndexBytes = requiredIndices * 4;
 
-    // By default a WebGPU canvas is opaque. Its alpha channel is ignored. 
-    // To make it not ignored we have to set its alphaMode to 'premultiplied' when we call configure. 
-    // The default is 'opaque'
+  // Vertex buffer
+  if (!vertexBuffer || vertexCapacity < requiredVertexBytes) {
+    if (vertexBuffer) vertexBuffer.destroy();
+    vertexCapacity = Math.max(requiredVertexBytes, vertexCapacity * 2) || 65536;
+    vertexBuffer = device.createBuffer({
+      label: "vertex-buffer",
+      size: vertexCapacity,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+    vertexData = new Float32Array(vertexCapacity / 4);
+  }
 
-    // It’s important to understand what alphaMode: 'premultiplied' means. 
-    // It means, the colors you put in the canvas must have their color values 
-    // already multiplied by the alpha value.
-    alphaMode: "premultiplied",
-  });
-
-
-  // Create a new shader module on the GPU device
-  const cellShaderModule = device.createShaderModule({
-    // The label is used for debugging purposes.
-    label: "Vertex Shader", 
-
-    // The code has the WGSL shader code.
-    // Struct VSOut defines a structure for the vertex shader’s output.
-    // The vertex shader must output a position for each vertex — 
-    // the built-in value @builtin(position) is special; it tells WebGPU 
-    // that this field represents the position in clip space 
-    // (the coordinate system before rasterization).
-
-    // @vertex fn vs_main(@location(0) pos: vec2<f32>) -> VSOut 
-    // { @vertex marks this as the vertex shader entry point. 
-    // The function name vs_main is arbitrary — 
-    // We reference it later when creating your render pipeline. 
-    // The parameter @location(0) pos means: 
-    // Take input from vertex buffer attribute 0. 
-    // Each vertex provides a 2D position (a vec2<f32>).
-
-    // var out: VSOut; 
-    // Declares a variable out that will hold the shader’s output — 
-    // the struct defined earlier.
-
-    // out.position = vec4<f32>(pos, 0.0, 1.0); 
-    // Converts the 2D input pos into a 4D position vector required by the GPU pipeline.
-    // The GPU expects a 4D position in clip space:
-    // (x, y) → come from your input
-    // z = 0.0 → no depth for now (flat geometry)
-    // w = 1.0 → homogeneous coordinate (used in perspective divide later)
-
-    // @fragment fn fs_main() -> @location(0) vec4<f32> {
-    // @fragment marks this as the fragment shader entry point.
-    // It runs once per pixel that the geometry covers.
-    // The return value @location(0) means the output color is written 
-    // to the first color attachment in your render target (usually the screen)
-
-
-    code: `
-      
-      @group(0) @binding(0) var<uniform> color: vec4<f32>;
-
-      struct VSOut {
-        @builtin(position) position : vec4<f32>,
-      };
-
-      @vertex
-      fn vs_main(@location(0) pos: vec2<f32>) -> VSOut {
-        var out: VSOut;
-        out.position = vec4<f32>(pos, 0.0, 1.0);
-        return out;
-      }
-
-      @fragment
-      fn fs_main() -> @location(0) vec4<f32> {
-        // rgba(0, 129, 175, 0.5)
-        // return vec4<f32>(0.0, 129.0 / 255.0, 175.0 / 255.0, 0.5);
-        return color;
-      }
-    `
-  });
-  
-  const bindGroupLayout = device.createBindGroupLayout({
-    entries: [
-      {
-        binding: 0,
-        visibility: GPUShaderStage.FRAGMENT,
-        buffer: {},
-      },
-    ],
-  });
-
-  const vertexBufferLayout: GPUVertexBufferLayout = {
-
-    // arrayStride is the number of bytes the GPU needs to skip 
-    // forward in the buffer when it's looking for the next vertex. 
-    // Each vertex of your square is made up of two 32-bit floating point numbers. 
-    // As mentioned earlier, a 32-bit float is 4 bytes, so two floats is 8 bytes.
-
-    arrayStride: 8,
-    attributes: [
-      {
-        // https://gpuweb.github.io/gpuweb/#enumdef-gpuvertexformat
-        // Format comes from a list of GPUVertexFormat types that describe 
-        // each type of vertex data that the GPU can understand. 
-        // The vertices here have two 32-bit floats each, so we use the format float32x2
-
-        format: "float32x2" as GPUVertexFormat,
-
-        // the offset describes how many bytes into the vertex this particular attribute starts. 
-        offset: 0,
-
-        // The shaderLocation. This is an arbitrary number between 0 and 15 
-        // and must be unique for every attribute that you define. 
-        // It links this attribute to a particular input in the vertex shader.
-        shaderLocation: 0,
-      } as GPUVertexAttribute,
-    ],
-  };
-
-  pipeline = device.createRenderPipeline({
-    // Every pipeline needs a layout that describes what types of inputs.
-    layout: device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout],
-    }),
-
-    // Now, we provide details about the vertex stage. 
-    
-    vertex: {
-
-      // The module is the GPUShaderModule that contains your vertex shader, 
-      module: cellShaderModule,
-
-      // The entryPoint gives the name of the function in the shader code that is 
-      // called for every vertex invocation. (You can have multiple @vertex and @fragment 
-      // functions in a single shader module!) 
-      entryPoint: "vs_main",
-
-      // The buffers is an array of GPUVertexBufferLayout 
-      // objects that describe how your data is packed in the vertex buffers that you use 
-      // this pipeline with. 
-      buffers: [vertexBufferLayout],
-    },
-    fragment: {
-      module: cellShaderModule,
-      entryPoint: "fs_main",
-      targets: [{
-
-
-        format: canvasFormat,
-        blend: {
-          color: {
-            // srcFactor is the factor for the source color (the color being drawn)
-            srcFactor: "src-alpha",
-
-            // dstFactor is the factor for the destination color (the color already in the framebuffer)
-            dstFactor: "one-minus-src-alpha",
-
-            // operation is the blending operation to apply
-            operation: "add",
-          },
-          alpha: {
-
-            // srcFactor is the factor for the source alpha (the alpha being drawn)
-            srcFactor: "one",
-
-            // dstFactor is the factor for the destination alpha (the alpha already in the framebuffer)
-            dstFactor: "one-minus-src-alpha",
-
-            // operation is the blending operation to apply
-            operation: "add",
-          },
-        },
-      }],
-    },
-    primitive: {
-      // We are drawing lines
-      topology: "line-strip",
-
-      // For pipelines with strip topologies ("line-strip" or "triangle-strip"), this determines the 
-      // index buffer format and primitive restart value ("uint16"/0xFFFF or "uint32"/0xFFFFFFFF). 
-      // It is not allowed on pipelines with non-strip topologies.
-      stripIndexFormat: undefined,
-    },
-  });
-
-  // Create uniform buffers for active and inactive colors
-  const activeColorBuffer = device.createBuffer({
-    size: 16,  // vec4<f32> = 16 bytes
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(activeColorBuffer, 0, new Float32Array([0.0, 129.0 / 255.0, 175.0 / 255.0, 0.5]));
-
-  const inactiveColorBuffer = device.createBuffer({
-    size: 16,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(inactiveColorBuffer, 0, new Float32Array([211.0 / 255.0, 211.0 / 255.0, 211.0 / 255.0, 0.4]));
-
-  // Create bind groups for each color
-  activeBindGroup = device.createBindGroup({
-    layout: bindGroupLayout,
-    entries: [{ binding: 0, resource: { buffer: activeColorBuffer } }],
-  });
-
-  inactiveBindGroup = device.createBindGroup({
-    layout: bindGroupLayout,
-    entries: [{ binding: 0, resource: { buffer: inactiveColorBuffer } }],
-  });
-
-  // Create command encoder to encode GPU commands
-  encoder = device.createCommandEncoder();
-
-  // Begin a render pass
-  pass = encoder.beginRenderPass({
-    colorAttachments: [{
-      view: context.getCurrentTexture().createView(),
-      loadOp: "clear",
-      // clear to transparent
-      clearValue: { r: 0, g: 0, b: 0, a: 0 },
-      storeOp: "store",
-    }],
-  });
+  // Index buffer
+  if (!indexBuffer || indexCapacity < requiredIndexBytes) {
+    if (indexBuffer) indexBuffer.destroy();
+    indexCapacity = Math.max(requiredIndexBytes, indexCapacity * 2) || 32768;
+    indexBuffer = device.createBuffer({
+      label: "index-buffer",
+      size: indexCapacity,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+    });
+    indexData = new Uint32Array(indexCapacity / 4);
+  }
 }
 
-
-// Below function initializes WebGPU context and device
-export async function initCanvasWebGPU() {
-
-  // console.log("Initializing WebGPU...");
-
-  // The Navigator interface represents the state and the identity of the user agent. 
-  // It allows scripts to query it and to register themselves to carry on some activities.
+export async function initCanvasWebGPU(): Promise<void> {
   if (!navigator.gpu) {
     throw new Error("WebGPU not supported.");
   }
 
-  // Request and Check if a GPU adapter is available
-  const adapter = await navigator.gpu.requestAdapter();
+  const adapter = await navigator.gpu.requestAdapter({
+    powerPreference: "high-performance",
+  });
   if (!adapter) {
     throw new Error("GPU adapter unavailable.");
   }
+
   device = await adapter.requestDevice();
 
-  // console.log("WebGPU initialized successfully.");
+  dpr = window.devicePixelRatio || 1;
+  width = canvasEl.clientWidth * dpr;
+  height = canvasEl.clientHeight * dpr;
+  canvasEl.width = width;
+  canvasEl.height = height;
 
-  initWebGPU();
-  
-}
+  context = canvasEl.getContext("webgpu") as GPUCanvasContext;
+  canvasFormat = navigator.gpu.getPreferredCanvasFormat();
 
-export function redrawWebGPULines(dataset: any[], parcoords: any) {
-
-  if (!device) {
-    throw new Error("GPU device is not initialized. Call initCanvasWebGPU first.");
-  }
-
-  // Create command encoder to encode GPU commands
-  encoder = device.createCommandEncoder();
-
-  // Begin a render pass
-  pass = encoder.beginRenderPass({
-    colorAttachments: [{
-      view: context.getCurrentTexture().createView(),
-      loadOp: "clear",
-      // clear to transparent
-      clearValue: { r: 0, g: 0, b: 0, a: 0 },
-      storeOp: "store",
-    }],
+  context.configure({
+    device,
+    format: canvasFormat,
+    alphaMode: "premultiplied",
   });
 
-  // The devicePixelRatio of Window interface returns the ratio of the resolution in physical pixels 
-  // to the resolution in CSS pixels for the current display device.
-  const dpr = window.devicePixelRatio || 1;
-  // Get canvas dimensions
-  const canvasWidth = canvasEl.width;
-  const canvasHeight = canvasEl.height;
+  // Create shader module
+  const shaderModule = device.createShaderModule({
+    label: "line-shader",
+    code: SHADER_CODE,
+  });
 
-  let activeCount = 0;
-  let inactiveCount = 0;
+  // Create bind group layout
+  const bindGroupLayout = device.createBindGroupLayout({
+    entries: [
+      {
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: { type: "uniform" },
+      },
+    ],
+  });
 
-  // console.log("Context:", context);
-  for (const d of dataset) {
-    const id = getLineName(d);
-    // Determine if the line is active or inactive
-    const active = lineState[id]?.active ?? true;
+  // Create pipeline layout
+  const pipelineLayout = device.createPipelineLayout({
+    bindGroupLayouts: [bindGroupLayout],
+  });
 
-    if (active) {
-      activeCount++;
-    } else {
-      inactiveCount++;
-    }
+  // Create render pipeline
+  pipeline = device.createRenderPipeline({
+    label: "line-pipeline",
+    layout: pipelineLayout,
+    vertex: {
+      module: shaderModule,
+      entryPoint: "vs_main",
+      buffers: [
+        {
+          arrayStride: BYTES_PER_VERTEX,
+          attributes: [
+            { shaderLocation: 0, offset: 0, format: "float32x2" }, // position
+            { shaderLocation: 1, offset: 8, format: "float32x4" }, // color
+          ],
+        },
+      ],
+    },
+    fragment: {
+      module: shaderModule,
+      entryPoint: "fs_main",
+      targets: [
+        {
+          format: canvasFormat,
+          blend: {
+            color: {
+              srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add",
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add",
+            },
+          },
+        },
+      ],
+    },
+    primitive: {
+      topology: "line-strip",
+      stripIndexFormat: "uint32",
+    },
+  });
 
+  // Create uniform buffer for resolution
+  uniformBuffer = device.createBuffer({
+    label: "uniform-buffer",
+    size: 16, // vec2 + padding
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
 
-    const pts = getPolylinePoints(d, parcoords, dpr);
-    if (pts.length < 2) continue;
+  // Create bind group
+  bindGroup = device.createBindGroup({
+    layout: bindGroupLayout,
+    entries: [
+      {
+        binding: 0,
+        resource: { buffer: uniformBuffer },
+      },
+    ],
+  });
 
-    // Create a vertex buffer for the polyline
-    const verts = new Float32Array(pts.length * 2);
-    for (let i = 0; i < pts.length; ++i) {
-      const x = pts[i][0];
-      const y = pts[i][1];
-      const xClip = (x / canvasWidth) * 2 - 1;
-      const yClip = 1 - (y / canvasHeight) * 2;
-      verts[i * 2 + 0] = xClip;
-      verts[i * 2 + 1] = yClip;
-    }
+  // Write initial resolution
+  device.queue.writeBuffer(uniformBuffer, 0, new Float32Array([width, height]));
+}
 
-    const vertexBuffer = device.createBuffer({
-      label: "polyline-vertices",
-      size: verts.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-    });
-
-    device.queue.writeBuffer(vertexBuffer, 0, verts);
-    pass.setPipeline(pipeline);
-    pass.setBindGroup(0, active ? activeBindGroup : inactiveBindGroup);
-    pass.setVertexBuffer(0, vertexBuffer);
-    pass.draw(verts.length / 2, 1, 0, 0);
+export function redrawWebGPULines(dataset: any[], parcoords: any): void {
+  if (!device || !pipeline || !context) {
+    throw new Error("WebGPU not initialized. Call initCanvasWebGPU first.");
   }
 
-  // console.log(`Active lines: ${activeCount}, Inactive lines: ${inactiveCount}`);
+  // Handle resize
+  const newDpr = window.devicePixelRatio || 1;
+  const newWidth = canvasEl.clientWidth * newDpr;
+  const newHeight = canvasEl.clientHeight * newDpr;
+
+  if (newWidth !== width || newHeight !== height || newDpr !== dpr) {
+    dpr = newDpr;
+    width = newWidth;
+    height = newHeight;
+    canvasEl.width = width;
+    canvasEl.height = height;
+
+    context.configure({
+      device,
+      format: canvasFormat,
+      alphaMode: "premultiplied",
+    });
+
+    device.queue.writeBuffer(
+      uniformBuffer!,
+      0,
+      new Float32Array([width, height])
+    );
+  }
+
+  if (!dataset.length) return;
+
+  const features: string[] = parcoords.newFeatures;
+  const numFeatures = features.length;
+  if (numFeatures < 2) return;
+
+  const dragging = parcoords.dragging;
+  const xScales = parcoords.xScales;
+  const yScales = parcoords.yScales;
+
+  // Sort: inactive first, active last (for correct layering)
+  const inactive: any[] = [];
+  const active: any[] = [];
+
+  for (const d of dataset) {
+    if (lineState[getLineName(d)]?.active ?? true) {
+      active.push(d);
+    } else {
+      inactive.push(d);
+    }
+  }
+  const sortedData = [...inactive, ...active];
+  const numLines = sortedData.length;
+
+  // Calculate required buffer sizes
+  const totalVertices = numLines * numFeatures;
+  const totalIndices = totalVertices + numLines - 1; // vertices + restart indices
+
+  ensureCapacity(totalVertices, totalIndices);
+
+  const verts = vertexData!;
+  const idxs = indexData!;
+
+  // Cache x-coordinates (same for all lines)
+  const xCoords = new Float32Array(numFeatures);
+  for (let i = 0; i < numFeatures; i++) {
+    const f = features[i];
+    xCoords[i] = (dragging[f] ?? xScales(f)) * dpr;
+  }
+
+  let vi = 0; // vertex float index
+  let ii = 0; // index array index
+  let vertexIndex = 0;
+
+  const inactiveCount = inactive.length;
+
+  for (let li = 0; li < numLines; li++) {
+    const d = sortedData[li];
+    const isActive = li >= inactiveCount;
+
+    const r = isActive ? ACTIVE_R : INACTIVE_R;
+    const g = isActive ? ACTIVE_G : INACTIVE_G;
+    const b = isActive ? ACTIVE_B : INACTIVE_B;
+    const a = isActive ? ACTIVE_A : INACTIVE_A;
+
+    // Add vertices for this line
+    for (let fi = 0; fi < numFeatures; fi++) {
+      const f = features[fi];
+      const x = xCoords[fi];
+      const y = yScales[f](d[f]) * dpr;
+
+      // Interleaved: x, y, r, g, b, a
+      verts[vi++] = x;
+      verts[vi++] = y;
+      verts[vi++] = r;
+      verts[vi++] = g;
+      verts[vi++] = b;
+      verts[vi++] = a;
+
+      idxs[ii++] = vertexIndex++;
+    }
+
+    // Add primitive restart between lines
+    if (li < numLines - 1) {
+      idxs[ii++] = PRIMITIVE_RESTART;
+    }
+  }
+
+  // Upload data to GPU
+  device.queue.writeBuffer(vertexBuffer!, 0, verts.subarray(0, vi));
+  device.queue.writeBuffer(indexBuffer!, 0, idxs.subarray(0, ii));
+
+  // Create command encoder and render pass
+  const encoder = device.createCommandEncoder();
+
+  const pass = encoder.beginRenderPass({
+    colorAttachments: [
+      {
+        view: context.getCurrentTexture().createView(),
+        loadOp: "clear",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 },
+        storeOp: "store",
+      },
+    ],
+  });
+
+  pass.setPipeline(pipeline);
+  pass.setBindGroup(0, bindGroup!);
+  pass.setVertexBuffer(0, vertexBuffer!);
+  pass.setIndexBuffer(indexBuffer!, "uint32");
+  pass.drawIndexed(ii);
 
   pass.end();
   device.queue.submit([encoder.finish()]);
