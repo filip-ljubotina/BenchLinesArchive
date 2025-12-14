@@ -1,9 +1,12 @@
 import * as THREE from "three/webgpu";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
-import { getLineName } from "./brush";
 import { canvasEl, lineState } from "./globals";
-import { clearDataPointLabels, createLabelsContainer, showDataPointLabels } from "./labelUtils";
+import {
+  clearDataPointLabels,
+  createLabelsContainer,
+  showDataPointLabels,
+} from "./labelUtils";
 
 let scene: THREE.Scene | null = null;
 let camera: THREE.OrthographicCamera | null = null;
@@ -35,7 +38,7 @@ export function disposeWebGPUThreeJS() {
   plotArea.removeEventListener("mouseleave", onMouseLeave!);
 
   clearDataPointLabels();
-  
+
   for (const [_, line] of lineObjects) {
     if (scene) scene.remove(line);
     line.geometry.dispose();
@@ -231,14 +234,12 @@ export function redrawWebGPULinesThreeJS(dataset: any[], parcoords: any) {
 
   const usedIds = new Set<string>();
 
-  for (const d of dataset) {
-    const id = getLineName(d);
+  dataset.forEach((d, index) => {
+    const id = String(index);
     usedIds.add(id);
 
     const active = lineState[id]?.active ?? true;
     const pts = getPolylinePoints(d, parcoords);
-
-    if (pts.length < 6) continue;
 
     let line = lineObjects.get(id);
 
@@ -270,7 +271,7 @@ export function redrawWebGPULinesThreeJS(dataset: any[], parcoords: any) {
 
       lineDataMap.set(line, d);
     }
-  }
+  });
 
   for (const [id, line] of lineObjects) {
     if (!usedIds.has(id)) {
