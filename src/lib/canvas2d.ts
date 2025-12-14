@@ -1,4 +1,4 @@
-import { getLineName } from "./brush";
+import { getLineNameCanvas } from "./brush";
 import { canvasEl, lineState } from "./globals";
 let ctx: CanvasRenderingContext2D | null = null;
 
@@ -20,7 +20,7 @@ export function redrawCanvasLines(dataset, parcoords) {
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
   for (const d of dataset) {
-    const id = getLineName(d);
+    const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
 
     const pts = getPolylinePoints(d, parcoords);

@@ -1,5 +1,5 @@
 import { canvasEl, lineState } from "./globals";
-import { getLineName } from "./brush";
+import { getLineNameCanvas } from "./brush";
 
 let device: GPUDevice;
 let pipeline: GPURenderPipeline;
@@ -294,7 +294,7 @@ export function redrawWebGPULines(dataset: any[], parcoords: any) {
   let totalVertexCount = 0;
 
   for (const d of dataset) {
-    const id = getLineName(d);
+    const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
     const pts = getPolylinePoints(d, parcoords, dpr);
     

@@ -1,4 +1,4 @@
-import { getLineName } from "./brush";
+import { getLineNameCanvas } from "./brush";
 import { canvasEl, lineState } from "./globals";
 
 let gl: WebGLRenderingContext | null = null;
@@ -120,7 +120,7 @@ export function redrawWebGLLines(dataset: any[], parcoords: any) {
   const colors: number[] = [];
 
   for (const d of dataset) {
-    const id = getLineName(d);
+    const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
     const pts = getPolylinePoints(d, parcoords, dpr);
     if (pts.length < 2) continue;

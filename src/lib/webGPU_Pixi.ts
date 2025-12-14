@@ -1,4 +1,4 @@
-import { getLineName } from "./brush";
+import { getLineNameCanvas } from "./brush";
 import { canvasEl, lineState } from "./globals";
 import * as PIXI from "pixi.js"; // Use the main pixi.js package for v8+ with WebGPU support
 
@@ -50,7 +50,7 @@ export function redrawWebGPUPixiLines(dataset: any[], parcoords: any) {
   lineGraphics.clear();
 
   for (const d of dataset) {
-    const id = getLineName(d);
+    const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
 
     const pts = getPolylinePoints(d, parcoords);

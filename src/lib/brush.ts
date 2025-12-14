@@ -5,6 +5,7 @@ import { isDimensionCategorical } from './helperApiFunc';
 import * as api from './helperApiFunc';
 import { parcoords, makeLineInactiveCanvas, makeLineActiveCanvas,currWebTech } from './globals';
 import { redrawPolylines } from './parallelcoordinates';
+import { v5 as uuidv5 } from 'uuid';
 
 export function brushDown(cleanDimensionName: string, event: any, d: any,
     tooltipValues: any, window: any): void {
@@ -401,6 +402,16 @@ export function getLineName(d: any): string {
     return helper.cleanString(d[key]);
 }
 
+const NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'; // or generate your own
+
+export function getLineNameCanvas(d: any): string {
+    const keys = Object.keys(d);
+    const key = keys[0];
+    const baseName = helper.cleanString(d[key]);
+    const id = uuidv5(JSON.stringify(d, Object.keys(d).sort()), NAMESPACE);
+    return `${baseName}-${id}`;
+}
+
 export function addPosition(yPosTop: number, dimension: string, key: string): void {
     let newObject = {};
     newObject[key] = yPosTop;
@@ -637,7 +648,7 @@ export function updateCanvasLines(
   }
 
   for (const row of parcoords.newDataset) {
-    const currentLineName = getLineName(row); 
+    const currentLineName = getLineNameCanvas(row); 
 
     let valueY: number;
 

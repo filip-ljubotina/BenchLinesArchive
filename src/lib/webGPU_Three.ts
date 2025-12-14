@@ -1,6 +1,7 @@
 import * as THREE from "three/webgpu";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
+import { getLineNameCanvas } from "./brush";
 import { canvasEl, lineState } from "./globals";
 import {
   clearDataPointLabels,
@@ -235,7 +236,7 @@ export function redrawWebGPULinesThreeJS(dataset: any[], parcoords: any) {
   const usedIds = new Set<string>();
 
   dataset.forEach((d, index) => {
-    const id = String(index);
+    const id = getLineNameCanvas(d);
     usedIds.add(id);
 
     const active = lineState[id]?.active ?? true;
