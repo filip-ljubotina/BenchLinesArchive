@@ -580,7 +580,7 @@ export async function runPolylineBenchmark(
 }
 
 export function drawChart(content: any[]): void {
-  // console.log("Triggered drawChart");
+  // console.log("Triggered  ");
   setRefreshData(structuredClone(content));
   deleteChart();
 
@@ -680,8 +680,6 @@ export function drawChart(content: any[]): void {
       redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
       break;
     case "WebGPU":
-      // console.log("Using WebGPU rendering from DrawChart");
-      // setActive(setActivePathLines(svg, content, parcoords));
       initCanvasWebGPU()
         .then(() => {
           redrawWebGPULines(parcoords.newDataset, parcoords);
@@ -695,15 +693,6 @@ export function drawChart(content: any[]): void {
         })
         .catch((err) => console.error("WebGPU-Three init failed:", err));
       break;
-
-    // case "WebGPU-Orillusion":
-    //   initCanvasWebGPUOrillusion()
-    //     .then(() => {
-    //       redrawWebGPULinesOrillusion(parcoords.newDataset, parcoords);
-    //     })
-    //     .catch((err) => console.error("WebGPU-Orillusion init failed:", err));
-    //   break;
-
     case "WebGPU-Pixi":
       initCanvasWebGPUPixi()
         .then(() => {
