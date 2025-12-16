@@ -64,6 +64,7 @@ function createProgram(gl: WebGLRenderingContext, vShader: WebGLShader, fShader:
 
 // WebGL initialization
 export function initCanvasWebGL() {
+  // if (gl) return gl;
   const dpr = window.devicePixelRatio || 1;
   canvasEl.width = canvasEl.clientWidth * dpr;
   canvasEl.height = canvasEl.clientHeight * dpr;

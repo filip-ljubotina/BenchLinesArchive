@@ -54,6 +54,7 @@ export function redrawWebGLLinesPixiJS(dataset: any[], parcoords: any) {
 }
 
 export function initCanvasWebGLPixiJS() {
+  // if (renderer) return renderer;
   const dpr = window.devicePixelRatio || 1;
   renderer = new PIXI.Renderer({
     view: canvasEl,
@@ -71,4 +72,17 @@ export function initCanvasWebGLPixiJS() {
   stage.addChild(linesContainer);
 
   return renderer;
+}
+
+export function destroyPixiRenderer() {
+  if (renderer) {
+    renderer.destroy();
+    renderer = null;
+  }
+  if (stage) {
+    stage.destroy({ children: true });
+    stage = null;
+  }
+  linesContainer = null;
+  lineGraphics.clear();
 }

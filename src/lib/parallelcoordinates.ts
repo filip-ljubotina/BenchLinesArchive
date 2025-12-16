@@ -562,11 +562,11 @@ export async function runPolylineBenchmark(
   }
 
   // Setup ONCE before benchmarking
-
+  await setupTechnology(currWebTech);
   let totalTime = 0;
 
   for (let i = 0; i < iters; i++) {
-    await setupTechnology(currWebTech);
+    // await setupTechnology(currWebTech);
     const t0 = performance.now();
     redrawPolylines(parcoords.newDataset, parcoords);
     const t1 = performance.now();

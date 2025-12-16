@@ -13,6 +13,7 @@ let lineMaterial: LineMaterial;
 let lineGeometry: LineSegmentsGeometry;
 
 export function initCanvasWebGLThreeJS() {
+  // if(renderer) return renderer;
   const width = canvasEl.clientWidth;
   const height = canvasEl.clientHeight;
 
