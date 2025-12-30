@@ -14,6 +14,8 @@ import {
   BenchmarkData,
   benchmarkData,
   setBenchmarkData,
+  activeTool,
+  setActiveTool,
 } from "./globals";
 import * as utils from "./utils";
 import * as helper from "./helper";
@@ -144,6 +146,14 @@ export function show(dimension: string): void {
       });
       return line()(points);
     });
+}
+
+export function getActiveTool() {
+  return activeTool;
+}
+
+export function setActiveToolHelper(tool: string) {
+  setActiveTool(tool);
 }
 
 export function getAllDatasetOptions(): DatasetName[] {

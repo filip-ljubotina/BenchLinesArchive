@@ -1,17 +1,33 @@
 import { getLineNameCanvas } from "./brush";
-import { canvasEl, lineState } from "./globals";
+import { canvasEl, lineState, parcoords } from "./globals";
+import { detectHoveredPolylines, initHoverDetection } from "./hover";
 
 let gl: WebGLRenderingContext | null = null;
 let program: WebGLProgram;
 
+// Overlay canvas and context
+let overlayCanvasEl: HTMLCanvasElement;
+let overlayGl: WebGLRenderingContext | null = null;
+let overlayProgram: WebGLProgram;
+
 // Persistent buffers
 let vertexBuffer: WebGLBuffer | null = null;
 let colorBuffer: WebGLBuffer | null = null;
+let overlayVertexBuffer: WebGLBuffer | null = null;
+let overlayColorBuffer: WebGLBuffer | null = null;
 
 // Shader attribute/uniform locations
 let posLoc: number;
 let colorLoc: number;
 let resolutionLoc: WebGLUniformLocation;
+let overlayPosLoc: number;
+let overlayColorLoc: number;
+let overlayResolutionLoc: WebGLUniformLocation;
+
+// Hover and selection state
+let hoveredLineIds: Set<string> = new Set();
+let selectedLineIds: Set<string> = new Set();
+let dataset: any[] = [];
 
 // Vertex and fragment shaders
 const vertexShaderSrc = `
@@ -49,7 +65,11 @@ function createShader(gl: WebGLRenderingContext, type: number, source: string) {
   return shader;
 }
 
-function createProgram(gl: WebGLRenderingContext, vShader: WebGLShader, fShader: WebGLShader) {
+function createProgram(
+  gl: WebGLRenderingContext,
+  vShader: WebGLShader,
+  fShader: WebGLShader
+) {
   const program = gl.createProgram();
   if (!program) throw new Error("createProgram failed");
   gl.attachShader(program, vShader);
@@ -62,8 +82,83 @@ function createProgram(gl: WebGLRenderingContext, vShader: WebGLShader, fShader:
   return program;
 }
 
+function createOverlayCanvas(): HTMLCanvasElement {
+  const overlay = document.createElement("canvas");
+  overlay.width = canvasEl.width;
+  overlay.height = canvasEl.height;
+  overlay.style.width = canvasEl.style.width;
+  overlay.style.height = canvasEl.style.height;
+  overlay.style.position = "absolute";
+  overlay.style.top = canvasEl.style.top;
+  overlay.style.left = canvasEl.style.left;
+
+  canvasEl.parentNode?.insertBefore(overlay, canvasEl.nextSibling);
+
+  return overlay;
+}
+
+function initOverlayWebGL() {
+  overlayGl = overlayCanvasEl.getContext("webgl");
+  if (!overlayGl) throw new Error("WebGL not supported on overlay canvas");
+
+  const vShader = createShader(
+    overlayGl,
+    overlayGl.VERTEX_SHADER,
+    vertexShaderSrc
+  );
+  const fShader = createShader(
+    overlayGl,
+    overlayGl.FRAGMENT_SHADER,
+    fragmentShaderSrc
+  );
+  overlayProgram = createProgram(overlayGl, vShader, fShader);
+
+  overlayGl.viewport(0, 0, overlayCanvasEl.width, overlayCanvasEl.height);
+  overlayGl.disable(overlayGl.BLEND);
+
+  // Persistent buffers for overlay
+  overlayVertexBuffer = overlayGl.createBuffer();
+  overlayColorBuffer = overlayGl.createBuffer();
+  if (!overlayVertexBuffer || !overlayColorBuffer)
+    throw new Error("Failed to create overlay buffers");
+
+  // Cache locations
+  overlayPosLoc = overlayGl.getAttribLocation(overlayProgram, "position");
+  overlayColorLoc = overlayGl.getAttribLocation(overlayProgram, "a_color");
+  overlayResolutionLoc = overlayGl.getUniformLocation(
+    overlayProgram,
+    "resolution"
+  )!;
+
+  // Enable attributes
+  overlayGl.enableVertexAttribArray(overlayPosLoc);
+  overlayGl.enableVertexAttribArray(overlayColorLoc);
+}
+
+function onHoveredLinesChange(hoveredIds: string[]) {
+  hoveredLineIds.clear();
+  hoveredIds.forEach((id) => hoveredLineIds.add(id));
+  redrawHoverOverlay();
+}
+
+function setupCanvasClickHandling() {
+  const plotArea = document.getElementById("plotArea") as HTMLDivElement;
+  plotArea.addEventListener("click", (e) => {
+    if (e.shiftKey) {
+      // Shift + click: add hovered lines to selected
+      if (hoveredLineIds.size > 0) {
+        hoveredLineIds.forEach((id) => selectedLineIds.add(id));
+      }
+    } else {
+      // Regular click: clear selected
+      selectedLineIds.clear();
+    }
+    redrawHoverOverlay();
+  });
+}
+
 // WebGL initialization
-export function initCanvasWebGL() {
+export async function initCanvasWebGL() {
   const dpr = window.devicePixelRatio || 1;
   canvasEl.width = canvasEl.clientWidth * dpr;
   canvasEl.height = canvasEl.clientHeight * dpr;
@@ -76,12 +171,13 @@ export function initCanvasWebGL() {
   program = createProgram(gl, vShader, fShader);
 
   gl.viewport(0, 0, canvasEl.width, canvasEl.height);
-  gl.disable(gl.BLEND); // minor efficiency gain
+  gl.disable(gl.BLEND);
 
   // Persistent buffers
   vertexBuffer = gl.createBuffer();
   colorBuffer = gl.createBuffer();
-  if (!vertexBuffer || !colorBuffer) throw new Error("Failed to create buffers");
+  if (!vertexBuffer || !colorBuffer)
+    throw new Error("Failed to create buffers");
 
   // Cache locations
   posLoc = gl.getAttribLocation(program, "position");
@@ -92,11 +188,22 @@ export function initCanvasWebGL() {
   gl.enableVertexAttribArray(posLoc);
   gl.enableVertexAttribArray(colorLoc);
 
+  // Create and initialize overlay canvas
+  overlayCanvasEl = createOverlayCanvas();
+  initOverlayWebGL();
+
+  await initHoverDetection(parcoords, onHoveredLinesChange);
+  setupCanvasClickHandling();
+
   return gl;
 }
 
 // Convert dataset row to polyline points
-function getPolylinePoints(d: any, parcoords: any, dpr: number): [number, number][] {
+function getPolylinePoints(
+  d: any,
+  parcoords: any,
+  dpr: number
+): [number, number][] {
   const pts: [number, number][] = [];
   parcoords.newFeatures.forEach((name: string) => {
     const x = (parcoords.dragging[name] ?? parcoords.xScales(name)) * dpr;
@@ -106,9 +213,85 @@ function getPolylinePoints(d: any, parcoords: any, dpr: number): [number, number
   return pts;
 }
 
+// Draw hovered and selected lines on overlay
+function redrawHoverOverlay() {
+  if (!overlayGl || !overlayVertexBuffer || !overlayColorBuffer) return;
+
+  overlayGl.useProgram(overlayProgram);
+  overlayGl.uniform2f(
+    overlayResolutionLoc,
+    overlayCanvasEl.width,
+    overlayCanvasEl.height
+  );
+  overlayGl.clear(overlayGl.COLOR_BUFFER_BIT);
+
+  const dpr = window.devicePixelRatio || 1;
+
+  const vertices: number[] = [];
+  const colors: number[] = [];
+
+  for (const d of dataset) {
+    const id = getLineNameCanvas(d);
+    const isHovered = hoveredLineIds.has(id);
+    const isSelected = selectedLineIds.has(id);
+
+    if (!isHovered && !isSelected) continue;
+
+    const pts = getPolylinePoints(d, parcoords, dpr);
+    if (pts.length < 2) continue;
+
+    // Red for hovered, yellow for selected
+    const color = isSelected ? [1, 1, 0, 0.8] : [1, 0, 0, 0.8];
+
+    // Convert polyline to line segments for LINES
+    for (let i = 0; i < pts.length - 1; i++) {
+      vertices.push(pts[i][0], pts[i][1]);
+      vertices.push(pts[i + 1][0], pts[i + 1][1]);
+
+      colors.push(...color);
+      colors.push(...color);
+    }
+  }
+
+  if (vertices.length === 0) {
+    return;
+  }
+
+  const vertexData = new Float32Array(vertices);
+  const colorData = new Float32Array(colors);
+
+  overlayGl.bindBuffer(overlayGl.ARRAY_BUFFER, overlayVertexBuffer);
+  overlayGl.bufferData(
+    overlayGl.ARRAY_BUFFER,
+    vertexData,
+    overlayGl.DYNAMIC_DRAW
+  );
+  overlayGl.vertexAttribPointer(overlayPosLoc, 2, overlayGl.FLOAT, false, 0, 0);
+
+  overlayGl.bindBuffer(overlayGl.ARRAY_BUFFER, overlayColorBuffer);
+  overlayGl.bufferData(
+    overlayGl.ARRAY_BUFFER,
+    colorData,
+    overlayGl.DYNAMIC_DRAW
+  );
+  overlayGl.vertexAttribPointer(
+    overlayColorLoc,
+    4,
+    overlayGl.FLOAT,
+    false,
+    0,
+    0
+  );
+
+  overlayGl.drawArrays(overlayGl.LINES, 0, vertexData.length / 2);
+}
+
 // Draw all lines
-export function redrawWebGLLines(dataset: any[], parcoords: any) {
+export function redrawWebGLLines(newDataset: any[], parcoords: any) {
   if (!gl || !vertexBuffer || !colorBuffer) return;
+
+  // Store dataset for overlay use
+  dataset = newDataset;
 
   gl.useProgram(program);
   gl.uniform2f(resolutionLoc, canvasEl.width, canvasEl.height);
@@ -119,7 +302,7 @@ export function redrawWebGLLines(dataset: any[], parcoords: any) {
   const vertices: number[] = [];
   const colors: number[] = [];
 
-  for (const d of dataset) {
+  for (const d of newDataset) {
     const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
     const pts = getPolylinePoints(d, parcoords, dpr);
@@ -151,4 +334,11 @@ export function redrawWebGLLines(dataset: any[], parcoords: any) {
   gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
 
   gl.drawArrays(gl.LINES, 0, vertexData.length / 2);
+
+  // Redraw the hover overlay with current hovered lines
+  redrawHoverOverlay();
+}
+
+export function getSelectedIds(): Set<string> {
+  return selectedLineIds;
 }

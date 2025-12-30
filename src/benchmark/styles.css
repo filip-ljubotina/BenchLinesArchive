@@ -33,9 +33,95 @@ body {
   flex-wrap: wrap;
 }
 
+/* Wrapper */
+.dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+  font-family: sans-serif;
+}
+
+/* Trigger button */
+.dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border: 2px solid #d1d5db;
+  background: #f9fafb;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dropdown-trigger:hover {
+  background: #e5e7eb;
+}
+
+.dropdown-trigger:focus {
+  outline: none;
+}
+
+/* Chevron */
+.chevron {
+  font-size: 10px;
+}
+
+/* Dropdown menu (closed by default) */
+.dropdown-menu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  width: 140px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  display: none;
+  z-index: 1000;
+}
+
+/* Open state (controlled by JS) */
+.dropdown-wrapper.open .dropdown-menu {
+  display: block;
+}
+
+/* Dropdown item */
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+/* Checkmark */
+.check {
+  width: 16px;
+  margin-right: 6px;
+  visibility: hidden;
+}
+
+/* Selected item */
+.dropdown-item.selected .check {
+  visibility: visible;
+}
+
+/* Label */
+.label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
 #webTechContainer,
 #datasetContainer {
-  flex-basis: 100%;        /* <<< forces a new row */
+  flex-basis: 100%; /* <<< forces a new row */
   margin-top: 0.5rem;
   display: flex;
   gap: 0.5rem;
@@ -52,7 +138,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .input-button {

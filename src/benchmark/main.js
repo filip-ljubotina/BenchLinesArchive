@@ -34,6 +34,7 @@ import {
   getBenchmarkData,
   getCurrentWebTechnologie,
   setCurrentWebTechnologie,
+  setActiveToolHelper,
 } from "./lib/spcd3.js";
 
 let data;
@@ -122,6 +123,38 @@ resetRoundedRangesButton.style.visibility = "hidden";
 let resetAllButton = document.getElementById("resetAll");
 resetAllButton.addEventListener("click", resetAll, false);
 resetAllButton.style.visibility = "hidden";
+
+const dropdown = document.getElementById("tool-dropdown");
+const trigger = document.getElementById("tool-trigger");
+const triggerIcon = document.getElementById("tool-icon");
+const items = dropdown.querySelectorAll(".dropdown-item");
+
+trigger.addEventListener("click", (e) => {
+  e.stopPropagation();
+  dropdown.classList.toggle("open");
+});
+
+items.forEach((item) => {
+  item.addEventListener("click", (e) => {
+    e.stopPropagation();
+
+    const tool = item.dataset.tool;
+
+    items.forEach((i) => i.classList.remove("selected"));
+    item.classList.add("selected");
+
+    const icon = item.querySelector("svg").cloneNode(true);
+    triggerIcon.replaceChildren(icon);
+
+    setActiveToolHelper(tool);
+
+    dropdown.classList.remove("open");
+  });
+});
+
+document.addEventListener("click", () => {
+  dropdown.classList.remove("open");
+});
 
 function openFileDialog() {
   document.getElementById("fileInput").click();
