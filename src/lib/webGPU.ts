@@ -1,6 +1,6 @@
 import { canvasEl, lineState, parcoords } from "./globals";
 import { getLineNameCanvas } from "./brush";
-import { detectHoveredPolylines, initHoverDetection } from "./hover";
+import { initHoverDetection, SelectionMode } from "./hover";
 
 let device: GPUDevice;
 let pipeline: GPURenderPipeline;
@@ -49,9 +49,17 @@ function createOverlayCanvas(): HTMLCanvasElement {
   return overlay;
 }
 
-function onHoveredLinesChange(hoveredIds: string[]) {
-  hoveredLineIds.clear();
-  hoveredIds.forEach((id) => hoveredLineIds.add(id));
+function onHoveredLinesChange(
+  hoveredIds: string[],
+  selectionMode: SelectionMode
+) {
+  if (selectionMode === "hover") {
+    hoveredLineIds.clear();
+    hoveredIds.forEach((id) => hoveredLineIds.add(id));
+  } else {
+    selectedLineIds.clear();
+    hoveredIds.forEach((id) => selectedLineIds.add(id));
+  }
   redrawHoverOverlay();
 }
 

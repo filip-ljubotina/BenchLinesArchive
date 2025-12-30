@@ -67,7 +67,6 @@ export let benchmarkData: BenchmarkData = {
   avgSpeedTime: null,
 };
 
-
 export function setActiveTool(tool) {
   activeTool = tool;
 }

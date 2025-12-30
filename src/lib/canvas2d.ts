@@ -1,6 +1,6 @@
 import { getLineNameCanvas } from "./brush";
 import { canvasEl, lineState, parcoords } from "./globals";
-import { initHoverDetection } from "./hover";
+import { initHoverDetection, SelectionMode } from "./hover";
 
 let ctx: CanvasRenderingContext2D | null = null;
 let overlayCanvasEl: HTMLCanvasElement;
@@ -38,9 +38,17 @@ function createOverlayCanvas(): HTMLCanvasElement {
   return overlay;
 }
 
-function onHoveredLinesChange(hoveredIds: string[]) {
-  hoveredLineIds.clear();
-  hoveredIds.forEach((id) => hoveredLineIds.add(id));
+function onHoveredLinesChange(
+  hoveredIds: string[],
+  selectionMode: SelectionMode
+) {
+  if (selectionMode === "hover") {
+    hoveredLineIds.clear();
+    hoveredIds.forEach((id) => hoveredLineIds.add(id));
+  } else {
+    selectedLineIds.clear();
+    hoveredIds.forEach((id) => selectedLineIds.add(id));
+  }
   redrawHoverOverlay();
 }
 
