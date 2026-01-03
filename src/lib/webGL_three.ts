@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
-import { getLineName } from "./brush";
+import { getLineNameCanvas } from "./brush";
 import { canvasEl, lineState } from "./globals";
 
 let scene: THREE.Scene;
@@ -53,7 +53,7 @@ export function redrawWebGLLinesThreeJS(dataset: any[], parcoords: any) {
 
   let offset = 0;
   for (const d of dataset) {
-    const id = getLineName(d);
+    const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
     const color = active ? [0.5, 0.75, 0.84] : [0.92, 0.92, 0.92];
 

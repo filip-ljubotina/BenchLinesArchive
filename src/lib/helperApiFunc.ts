@@ -14,6 +14,8 @@ import {
   BenchmarkData,
   benchmarkData,
   setBenchmarkData,
+  activeTool,
+  setActiveTool,
 } from "./globals";
 import * as utils from "./utils";
 import * as helper from "./helper";
@@ -23,6 +25,7 @@ import { select, selectAll } from "d3-selection";
 import { line } from "d3-shape";
 import { interpolatePath } from "d3-interpolate-path";
 import { easeCubic } from "d3-ease";
+import { redrawPolylines } from "./parallelcoordinates";
 
 //---------- Show and Hide Functions ----------
 export function hide(dimension: string): void {
@@ -146,6 +149,14 @@ export function show(dimension: string): void {
     });
 }
 
+export function getActiveTool() {
+  return activeTool;
+}
+
+export function setActiveToolHelper(tool: string) {
+  setActiveTool(tool);
+}
+
 export function getAllDatasetOptions(): DatasetName[] {
   return [
     "student_dataset",
@@ -183,7 +194,6 @@ export function getAllWebTechOptions(): GraphicsWebTech[] {
     "SVG-DOM",
     "WebGL",
     "WebGLThree",
-    "WebGLPixi",
     "WebGPU",
     "WebGPU-Three",
     "WebGPU-Pixi",
@@ -580,4 +590,5 @@ export function invert(dimension: string): void {
   } else {
     brush.addInvertStatus(false, dimension, "isInverted");
   }
+  redrawPolylines(parcoords.newDataset, parcoords);
 }

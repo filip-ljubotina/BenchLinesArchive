@@ -6,16 +6,15 @@
     "sourceMap": true,
     "outDir": "dist",
     "pretty": true,
-    "downlevelIteration" : true,
+    "downlevelIteration": true,
     "declaration": true,
     "declarationDir": "types",
-    "moduleResolution":"node",
-    "types":["@webgpu/types"]
+    "moduleResolution": "node",
+    "types": ["@webgpu/types"],
+    "paths": {
+      "three/webgpu": ["./node_modules/three/build/three.webgpu.js"]
+    }
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }

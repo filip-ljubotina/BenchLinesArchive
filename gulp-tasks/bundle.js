@@ -63,4 +63,4 @@ async function bundle() {
   ]);
 }
 
-module.exports = {bundle};
+module.exports = { bundle};

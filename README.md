@@ -7,7 +7,7 @@ Our fork adapts and extends the original material for the IAWU course with a foc
 - Compare these technologies in terms of usability, performance and modern GPU capabilities.
   
 # Deployed version of the project
-Here you can access the deployed version of the project: https://filip-ljubotina.github.io/iawu-spcd3/
+Here you can access the deployed version of the project: https://filip-ljubotina.github.io/BenchLines/
 
 
 # Steerable Parallel Coordinates in D3 (SPCD3)

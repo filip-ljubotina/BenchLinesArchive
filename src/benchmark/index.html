@@ -7,7 +7,7 @@
 
   <!-- Plugins -->
   <script type="module" src="./lib/spcd3.js"></script>
-
+  <script src="https://unpkg.com/gpu.js@latest/dist/gpu-browser.min.js"></script>
   <script type="module" src="./main.js"></script>
 
   <link rel="shortcut icon" href="#"/>
@@ -35,6 +35,40 @@
 <div id="webTechContainer" ></div>
 <div id="datasetContainer" ></div>
 <div id="benchmarkContainer"></div>
+<div class="dropdown-wrapper" id="tool-dropdown">
+  <!-- Trigger -->
+  <button class="dropdown-trigger" id="tool-trigger" aria-haspopup="true">
+    <span id="tool-icon">
+      <svg width="10" height="10" stroke="black" fill="none">
+        <rect x="1" y="1" width="8" height="8" />
+      </svg>
+    </span>
+    <span class="chevron">▾</span>
+  </button>
+
+  <!-- Dropdown -->
+  <div class="dropdown-menu">
+    <div class="dropdown-item selected" data-tool="rectangle">
+      <span class="check">✓</span>
+      <span class="label">
+        Rectangle
+        <svg width="10" height="10" stroke="black" fill="none">
+          <rect x="1" y="1" width="8" height="8" />
+        </svg>
+      </span>
+    </div>
+
+    <div class="dropdown-item" data-tool="line">
+      <span class="check">✓</span>
+      <span class="label">
+        Line
+        <svg width="10" height="10" stroke="black" fill="none">
+          <line x1="1" y1="9" x2="9" y2="1" />
+        </svg>
+      </span>
+    </div>
+  </div>
+</div>
 </div>
 
 <div id="parallelcoords"></div>

@@ -38,8 +38,6 @@
     "typescript": "^5.5.3"
   },
   "dependencies": {
-    "@orillusion/core": "^0.8.5-dev.9",
-    "@orillusion/graphic": "^0.2.7",
     "@webgpu/types": "^0.1.66",
     "d3-array": "^3.2.4",
     "d3-axis": "^3.0.0",
@@ -57,6 +55,7 @@
     "pixi.js-legacy": "^7.4.3",
     "rollup-plugin-polyfill-node": "^0.13.0",
     "three": "^0.181.2",
+    "uuid": "^13.0.0",
     "xml-formatter": "^3.6.4"
   }
 }

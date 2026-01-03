@@ -41,7 +41,6 @@ export type GraphicsWebTech =
   | "WebGPU"
   | "WebGPU-Three"
   | "WebGLThree"
-  |  "WebGLPixi"
   | "WebGPU-Pixi";
 
 export let currWebTech: GraphicsWebTech = "SVG-DOM";
@@ -57,6 +56,7 @@ export type DatasetName =
   | "20D_100000";
 export let currDataset: DatasetName = "student_dataset";
 export const lineState: Record<string, { active: boolean }> = {};
+export let activeTool = "rectangle";
 
 export type BenchmarkData = {
   numOfIterations: number | null;
@@ -66,6 +66,14 @@ export let benchmarkData: BenchmarkData = {
   numOfIterations: null,
   avgSpeedTime: null,
 };
+
+export function setActiveTool(tool) {
+  activeTool = tool;
+}
+
+export function getActiveTool() {
+  return activeTool;
+}
 
 export function setBenchmarkData(newBenchmarkData) {
   benchmarkData = newBenchmarkData;

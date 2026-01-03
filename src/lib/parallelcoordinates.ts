@@ -7,9 +7,11 @@ import { initCanvas2D, redrawCanvasLines } from "./canvas2d";
 import { initCanvasWebGL, redrawWebGLLines } from "./webGL";
 import { initPixiCanvas2D, redrawPixiCanvasLines } from "./canvas2dPixi";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
-import { initCanvasWebGLPixiJS, redrawWebGLLinesPixiJS } from "./webGL_pixi";
 import { initCanvasWebGPU, redrawWebGPULines } from "./webGPU";
-import { initCanvasWebGPUThreeJS, redrawWebGPULinesThreeJS } from "./webGPU_Three";
+import {
+  initCanvasWebGPUThreeJS,
+  redrawWebGPULinesThreeJS,
+} from "./webGPU_Three";
 // import { initCanvasWebGPUOrillusion, redrawWebGPULinesOrillusion } from "./webGPU_Orillusion";
 import { initCanvasWebGPUPixi, redrawWebGPUPixiLines } from "./webGPU_Pixi";
 import * as context from "./contextMenu";
@@ -530,10 +532,6 @@ export async function setupTechnology(tech: string) {
       recreateCanvas();
       initCanvasWebGLThreeJS();
       break;
-    case "WebGLPixi":
-      recreateCanvas();
-      initCanvasWebGLPixiJS();
-      break;
     case "WebGPU":
       recreateCanvas();
       await initCanvasWebGPU();
@@ -585,7 +583,7 @@ export async function runPolylineBenchmark(
 }
 
 export function drawChart(content: any[]): void {
-  // console.log("Triggered drawChart");
+  // console.log("Triggered  ");
   setRefreshData(structuredClone(content));
   deleteChart();
 
@@ -684,13 +682,7 @@ export function drawChart(content: any[]): void {
       initCanvasWebGLThreeJS();
       redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
       break;
-    case "WebGLPixi":
-      initCanvasWebGLPixiJS();
-      redrawWebGLLinesPixiJS(parcoords.newDataset, parcoords);
-      break;
     case "WebGPU":
-      // console.log("Using WebGPU rendering from DrawChart");
-      // setActive(setActivePathLines(svg, content, parcoords));
       initCanvasWebGPU()
         .then(() => {
           redrawWebGPULines(parcoords.newDataset, parcoords);
@@ -704,15 +696,6 @@ export function drawChart(content: any[]): void {
         })
         .catch((err) => console.error("WebGPU-Three init failed:", err));
       break;
-
-    // case "WebGPU-Orillusion":
-    //   initCanvasWebGPUOrillusion()
-    //     .then(() => {
-    //       redrawWebGPULinesOrillusion(parcoords.newDataset, parcoords);
-    //     })
-    //     .catch((err) => console.error("WebGPU-Orillusion init failed:", err));
-    //   break;
-    
     case "WebGPU-Pixi":
       initCanvasWebGPUPixi()
         .then(() => {
