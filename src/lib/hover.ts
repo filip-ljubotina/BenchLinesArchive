@@ -500,7 +500,7 @@ export async function detectHoveredPolylines(
     // Store the last selection mode
     hoverState.lastSelectionMode = selectionMode;
 
-    console.log(`Selection via ${selectionMode}:`, hoveredList);
+    // console.log(`Selection via ${selectionMode}:`, hoveredList);
 
     // Pass selection mode to callback
     onHoveredLinesChange(hoveredList, selectionMode);

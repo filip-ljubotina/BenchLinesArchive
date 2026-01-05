@@ -4,7 +4,7 @@ import { select, selectAll } from "d3-selection";
 import "d3-transition";
 import * as brush from "./brush";
 import { initCanvas2D, redrawCanvasLines } from "./canvas2d";
-import { initCanvasWebGL, redrawWebGLLines } from "./webGL";
+import { initCanvasWebGL, redrawWebGLLines, redrawWebGLBackgroundLines } from "./webGL";
 import { initPixiCanvas2D, redrawPixiCanvasLines } from "./canvas2dPixi";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
 import { initCanvasWebGPU, redrawWebGPULines } from "./webGPU";
@@ -491,9 +491,9 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
     case "WebGLThree":
       redrawWebGLLinesThreeJS(dataset, parcoords);
       break;
-    case "WebGLPixi":
-      redrawWebGLLinesPixiJS(dataset, parcoords);
-      break;
+    // case "WebGLPixi":
+    //   redrawWebGLLinesPixiJS(dataset, parcoords);
+    //   break;
     case "WebGPU":
       redrawWebGPULines(dataset, parcoords);
       break;
@@ -509,7 +509,44 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
   }
 }
 
-export async function setupTechnology(tech: string) {
+export function setupBackgroundAndRedrawPolylines(dataset: any[], parcoords: any) {
+  const dpr = window.devicePixelRatio || 1;
+  switch (currWebTech) {
+    case "Canvas2D":
+      redrawCanvasLines(dataset, parcoords);
+      break;
+    case "Canvas2DPixi":
+      redrawPixiCanvasLines(parcoords.newDataset, parcoords);
+      break;
+    case "SVG-DOM":
+      redrawSvgLines(svg, dataset, parcoords);
+      break;
+    case "WebGL":
+      redrawWebGLBackgroundLines(dataset, parcoords);
+      redrawWebGLLines(dataset, parcoords);
+      break;
+    case "WebGLThree":
+      redrawWebGLLinesThreeJS(dataset, parcoords);
+      break;
+    // case "WebGLPixi":
+    //   redrawWebGLLinesPixiJS(dataset, parcoords);
+    //   break;
+    case "WebGPU":
+      redrawWebGPULines(dataset, parcoords);
+      break;
+    case "WebGPU-Three":
+      redrawWebGPULinesThreeJS(dataset, parcoords);
+      break;
+    // case "WebGPU-Orillusion":
+    //   redrawWebGPULinesOrillusion(dataset, parcoords);
+    //   break;
+    case "WebGPU-Pixi":
+      redrawWebGPUPixiLines(dataset, parcoords);
+      break;
+  }
+}
+
+export async function setupTechnology(tech: string, dataset: any[], parcoords: any) {
   const dpr = window.devicePixelRatio || 1;
 
   switch (tech) {
@@ -526,11 +563,11 @@ export async function setupTechnology(tech: string) {
       break;
     case "WebGL":
       recreateCanvas();
-      initCanvasWebGL();
+      initCanvasWebGL(dataset, parcoords);
       break;
     case "WebGLThree":
       recreateCanvas();
-      initCanvasWebGLThreeJS();
+      initCanvasWebGLThreeJS(dataset, parcoords);
       break;
     case "WebGPU":
       recreateCanvas();
@@ -560,11 +597,10 @@ export async function runPolylineBenchmark(
   }
 
   // Setup ONCE before benchmarking
-
+  await setupTechnology(currWebTech, parcoords.newDataset, parcoords);
   let totalTime = 0;
 
   for (let i = 0; i < iters; i++) {
-    await setupTechnology(currWebTech);
     const t0 = performance.now();
     redrawPolylines(parcoords.newDataset, parcoords);
     const t1 = performance.now();
@@ -675,11 +711,11 @@ export function drawChart(content: any[]): void {
         .on("mousedown.selection", (event: any) => event.preventDefault());
       break;
     case "WebGL":
-      initCanvasWebGL();
+      initCanvasWebGL(parcoords.newDataset, parcoords);
       redrawWebGLLines(parcoords.newDataset, parcoords);
       break;
     case "WebGLThree":
-      initCanvasWebGLThreeJS();
+      initCanvasWebGLThreeJS(parcoords.newDataset, parcoords);
       redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
       break;
     case "WebGPU":

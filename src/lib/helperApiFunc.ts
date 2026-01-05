@@ -25,7 +25,7 @@ import { select, selectAll } from "d3-selection";
 import { line } from "d3-shape";
 import { interpolatePath } from "d3-interpolate-path";
 import { easeCubic } from "d3-ease";
-import { redrawPolylines } from "./parallelcoordinates";
+import { redrawPolylines, setupBackgroundAndRedrawPolylines } from "./parallelcoordinates";
 
 //---------- Show and Hide Functions ----------
 export function hide(dimension: string): void {
@@ -590,5 +590,6 @@ export function invert(dimension: string): void {
   } else {
     brush.addInvertStatus(false, dimension, "isInverted");
   }
-  redrawPolylines(parcoords.newDataset, parcoords);
+  // redrawPolylines(parcoords.newDataset, parcoords);
+  setupBackgroundAndRedrawPolylines(parcoords.newDataset, parcoords);
 }

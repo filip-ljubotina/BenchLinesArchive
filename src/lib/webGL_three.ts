@@ -12,7 +12,7 @@ let lines: Line2;
 let lineMaterial: LineMaterial;
 let lineGeometry: LineSegmentsGeometry;
 
-export function initCanvasWebGLThreeJS() {
+export function initCanvasWebGLThreeJS(dataset: any[], parcoords: any) {
   const width = canvasEl.clientWidth;
   const height = canvasEl.clientHeight;
 

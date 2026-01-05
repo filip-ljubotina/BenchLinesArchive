@@ -1,6 +1,7 @@
 import { getLineNameCanvas } from "./brush";
 import { canvasEl, lineState, parcoords, selected } from "./globals";
 import { initHoverDetection, SelectionMode } from "./hover";
+import { initLineTextureWebGL, drawInactiveLinesTexture } from "./lineTexture";
 
 let gl: WebGLRenderingContext | null = null;
 let program: WebGLProgram;
@@ -9,6 +10,9 @@ let program: WebGLProgram;
 let overlayCanvasEl: HTMLCanvasElement;
 let overlayGl: WebGLRenderingContext | null = null;
 let overlayProgram: WebGLProgram;
+
+// Background canvas
+let inactiveLinesCanvas: HTMLCanvasElement;
 
 // Persistent buffers
 let vertexBuffer: WebGLBuffer | null = null;
@@ -175,7 +179,7 @@ function setupCanvasClickHandling() {
 }
 
 // WebGL initialization
-export async function initCanvasWebGL() {
+export async function initCanvasWebGL(dataset: any[], parcoords: any) {
   const dpr = window.devicePixelRatio || 1;
   canvasEl.width = canvasEl.clientWidth * dpr;
   canvasEl.height = canvasEl.clientHeight * dpr;
@@ -209,10 +213,25 @@ export async function initCanvasWebGL() {
   overlayCanvasEl = createOverlayCanvas();
   initOverlayWebGL();
 
+  // create and intiialize the background texture
+  inactiveLinesCanvas = document.createElement("canvas");
+  inactiveLinesCanvas.width = canvasEl.width;
+  inactiveLinesCanvas.height = canvasEl.height;
+
+  // draw inactive lines into it
+  initLineTextureWebGL(inactiveLinesCanvas);
+  redrawWebGLBackgroundLines(dataset, parcoords);
+
+  canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);
+
   await initHoverDetection(parcoords, onHoveredLinesChange);
   setupCanvasClickHandling();
 
   return gl;
+}
+
+export function redrawWebGLBackgroundLines(dataset: any[], parcoords: any) {
+  drawInactiveLinesTexture(dataset, parcoords);
 }
 
 // Convert dataset row to polyline points
@@ -240,6 +259,7 @@ function redrawHoverOverlay() {
     overlayCanvasEl.width,
     overlayCanvasEl.height
   );
+  overlayGl.clearColor(0,0,0,0);
   overlayGl.clear(overlayGl.COLOR_BUFFER_BIT);
 
   const dpr = window.devicePixelRatio || 1;
@@ -312,7 +332,8 @@ export function redrawWebGLLines(newDataset: any[], parcoords: any) {
 
   gl.useProgram(program);
   gl.uniform2f(resolutionLoc, canvasEl.width, canvasEl.height);
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);  // clears active lines canvas
 
   const dpr = window.devicePixelRatio || 1;
 
@@ -322,6 +343,7 @@ export function redrawWebGLLines(newDataset: any[], parcoords: any) {
   for (const d of newDataset) {
     const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
+    if (!active) continue;     // skip inactive lines
     const pts = getPolylinePoints(d, parcoords, dpr);
     if (pts.length < 2) continue;
 
@@ -334,8 +356,7 @@ export function redrawWebGLLines(newDataset: any[], parcoords: any) {
       vertices.push(pts[i][0], pts[i][1]);
       vertices.push(pts[i + 1][0], pts[i + 1][1]);
 
-      colors.push(...color);
-      colors.push(...color);
+      colors.push(...color, ...color);
     }
   }
 
