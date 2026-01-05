@@ -1,10 +1,15 @@
 import { getLineNameCanvas } from "./brush";
 import { canvasEl, lineState, parcoords } from "./globals";
 import { initHoverDetection, SelectionMode } from "./hover";
+// the backgrounds are generated using webgl
+import { initLineTextureWebGL, drawInactiveLinesTexture } from "./lineTexture";
 
 let ctx: CanvasRenderingContext2D | null = null;
 let overlayCanvasEl: HTMLCanvasElement;
 let overlayCtx: CanvasRenderingContext2D | null = null;
+
+// Background canvas
+let inactiveLinesCanvas: HTMLCanvasElement;
 
 let hoveredLineIds: Set<string> = new Set();
 let selectedLineIds: Set<string> = new Set();
@@ -120,6 +125,7 @@ export function redrawCanvasLines(newDataset: any, parcoords: any) {
   for (const d of newDataset) {
     const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
+    if (!active) continue;     // skip inactive lines
 
     const pts = getPolylinePoints(d, parcoords);
     if (!pts.length) continue;
@@ -140,7 +146,7 @@ export function redrawCanvasLines(newDataset: any, parcoords: any) {
   redrawHoverOverlay();
 }
 
-export async function initCanvas2D(dpr: number) {
+export async function initCanvas2D(dpr: number, dataset: any[], parcoords: any) {
   ctx = canvasEl.getContext("2d")!;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // 2D only
 
@@ -149,10 +155,25 @@ export async function initCanvas2D(dpr: number) {
   overlayCtx = overlayCanvasEl.getContext("2d")!;
   overlayCtx.setTransform(dpr, 0, 0, dpr, 0, 0); // 2D only
 
+  // create and intiialize the background texture
+  inactiveLinesCanvas = document.createElement("canvas");
+  inactiveLinesCanvas.width = canvasEl.width;
+  inactiveLinesCanvas.height = canvasEl.height;
+
+  canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);
+
+  // draw inactive lines into it
+  initLineTextureWebGL(inactiveLinesCanvas);
+  redrawCanvas2DBackgroundLines(dataset, parcoords);
+
   await initHoverDetection(parcoords, onHoveredLinesChange);
   setupCanvasClickHandling();
 
   return ctx;
+}
+
+export function redrawCanvas2DBackgroundLines(dataset: any[], parcoords: any) {
+  drawInactiveLinesTexture(dataset, parcoords);
 }
 
 export function getSelectedIds(): Set<string> {

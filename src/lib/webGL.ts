@@ -218,11 +218,13 @@ export async function initCanvasWebGL(dataset: any[], parcoords: any) {
   inactiveLinesCanvas.width = canvasEl.width;
   inactiveLinesCanvas.height = canvasEl.height;
 
+  canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);
+
   // draw inactive lines into it
   initLineTextureWebGL(inactiveLinesCanvas);
   redrawWebGLBackgroundLines(dataset, parcoords);
 
-  canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);
+  
 
   await initHoverDetection(parcoords, onHoveredLinesChange);
   setupCanvasClickHandling();
