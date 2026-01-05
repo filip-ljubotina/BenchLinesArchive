@@ -44,10 +44,20 @@ function onHoveredLinesChange(
 ) {
   if (selectionMode === "hover") {
     hoveredLineIds.clear();
-    hoveredIds.forEach((id) => hoveredLineIds.add(id));
+    // hoveredIds.forEach((id) => hoveredLineIds.add(id));
+    hoveredIds.forEach((id) => {
+      if (lineState[id]?.active) {
+        hoveredLineIds.add(id);
+      }
+    });
   } else {
     selectedLineIds.clear();
-    hoveredIds.forEach((id) => selectedLineIds.add(id));
+    // hoveredIds.forEach((id) => selectedLineIds.add(id));
+    hoveredIds.forEach((id) => {
+      if (lineState[id]?.active) {
+        selectedLineIds.add(id);
+      }
+    });
   }
   redrawHoverOverlay();
 }

@@ -1,5 +1,5 @@
 import { getLineNameCanvas } from "./brush";
-import { canvasEl, lineState, parcoords } from "./globals";
+import { canvasEl, lineState, parcoords, selected } from "./globals";
 import { initHoverDetection, SelectionMode } from "./hover";
 
 let gl: WebGLRenderingContext | null = null;
@@ -141,10 +141,20 @@ function onHoveredLinesChange(
 ) {
   if (selectionMode === "hover") {
     hoveredLineIds.clear();
-    hoveredIds.forEach((id) => hoveredLineIds.add(id));
+    // hoveredIds.forEach((id) => hoveredLineIds.add(id));
+    hoveredIds.forEach((id) => {
+      if (lineState[id]?.active) {
+        hoveredLineIds.add(id);
+      }
+    });
   } else {
     selectedLineIds.clear();
-    hoveredIds.forEach((id) => selectedLineIds.add(id));
+    // hoveredIds.forEach((id) => selectedLineIds.add(id));
+    hoveredIds.forEach((id) => {
+      if (lineState[id]?.active) {
+        selectedLineIds.add(id);
+      }
+    });
   }
   redrawHoverOverlay();
 }
