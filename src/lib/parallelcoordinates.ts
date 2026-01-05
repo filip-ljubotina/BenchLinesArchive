@@ -509,40 +509,38 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
   }
 }
 
-export function setupBackgroundAndRedrawPolylines(dataset: any[], parcoords: any) {
-  const dpr = window.devicePixelRatio || 1;
+export function redrawBackgroundPolylines(dataset: any[], parcoords: any) {
   switch (currWebTech) {
-    case "Canvas2D":
-      redrawCanvasLines(dataset, parcoords);
-      break;
-    case "Canvas2DPixi":
-      redrawPixiCanvasLines(parcoords.newDataset, parcoords);
-      break;
-    case "SVG-DOM":
-      redrawSvgLines(svg, dataset, parcoords);
-      break;
+    // case "Canvas2D":
+    //   redrawCanvasLines(dataset, parcoords);
+    //   break;
+    // case "Canvas2DPixi":
+    //   redrawPixiCanvasLines(parcoords.newDataset, parcoords);
+    //   break;
+    // case "SVG-DOM":
+    //   redrawSvgLines(svg, dataset, parcoords);
+    //   break;
     case "WebGL":
       redrawWebGLBackgroundLines(dataset, parcoords);
-      redrawWebGLLines(dataset, parcoords);
       break;
-    case "WebGLThree":
-      redrawWebGLLinesThreeJS(dataset, parcoords);
-      break;
-    // case "WebGLPixi":
-    //   redrawWebGLLinesPixiJS(dataset, parcoords);
+    // case "WebGLThree":
+    //   redrawWebGLLinesThreeJS(dataset, parcoords);
     //   break;
-    case "WebGPU":
-      redrawWebGPULines(dataset, parcoords);
-      break;
-    case "WebGPU-Three":
-      redrawWebGPULinesThreeJS(dataset, parcoords);
-      break;
-    // case "WebGPU-Orillusion":
-    //   redrawWebGPULinesOrillusion(dataset, parcoords);
+    // // case "WebGLPixi":
+    // //   redrawWebGLLinesPixiJS(dataset, parcoords);
+    // //   break;
+    // case "WebGPU":
+    //   redrawWebGPULines(dataset, parcoords);
     //   break;
-    case "WebGPU-Pixi":
-      redrawWebGPUPixiLines(dataset, parcoords);
-      break;
+    // case "WebGPU-Three":
+    //   redrawWebGPULinesThreeJS(dataset, parcoords);
+    //   break;
+    // // case "WebGPU-Orillusion":
+    // //   redrawWebGPULinesOrillusion(dataset, parcoords);
+    // //   break;
+    // case "WebGPU-Pixi":
+    //   redrawWebGPUPixiLines(dataset, parcoords);
+    //   break;
   }
 }
 
