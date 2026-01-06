@@ -56,8 +56,27 @@ function createProgram(gl: WebGLRenderingContext, vShader: WebGLShader, fShader:
 }
 
 // Initialize WebGL for the texture rendering
+// export function initLineTextureWebGL(canvas: HTMLCanvasElement) {
+//   gl = canvas.getContext("webgl");
+//   if (!gl) throw new Error("WebGL not supported");
+
+//   const vShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSrc);
+//   const fShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSrc);
+//   program = createProgram(gl, vShader, fShader);
+
+//   gl.viewport(0, 0, canvas.width, canvas.height);
+//   gl.clearColor(0, 0, 0, 0);
+//   gl.clear(gl.COLOR_BUFFER_BIT);
+
+//   vertexBuffer = gl.createBuffer();
+//   colorBuffer = gl.createBuffer();
+//   if (!vertexBuffer || !colorBuffer) throw new Error("Failed to create buffers");
+
+//   resolutionLoc = gl.getUniformLocation(program, "resolution")!;
+// }
+
 export function initLineTextureWebGL(canvas: HTMLCanvasElement) {
-  gl = canvas.getContext("webgl");
+  gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
   if (!gl) throw new Error("WebGL not supported");
 
   const vShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSrc);
@@ -70,10 +89,44 @@ export function initLineTextureWebGL(canvas: HTMLCanvasElement) {
 
   vertexBuffer = gl.createBuffer();
   colorBuffer = gl.createBuffer();
-  if (!vertexBuffer || !colorBuffer) throw new Error("Failed to create buffers");
+  if (!vertexBuffer || !colorBuffer) {
+    throw new Error("Failed to create buffers");
+  }
 
   resolutionLoc = gl.getUniformLocation(program, "resolution")!;
 }
+
+export function rasterizeInactiveLinesToCanvas(targetCanvas: HTMLCanvasElement) {
+  if (!gl) return;
+
+  const sourceCanvas = gl.canvas as HTMLCanvasElement;
+  const w = sourceCanvas.width;
+  const h = sourceCanvas.height;
+
+  const pixels = new Uint8Array(w * h * 4);
+  gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+  const ctx = targetCanvas.getContext("2d");
+  if (!ctx) return;
+
+  const imageData = ctx.createImageData(w, h);
+
+  // Flip Y (WebGL bottom-left → Canvas top-left)
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const src = ((h - y - 1) * w + x) * 4;
+      const dst = (y * w + x) * 4;
+
+      imageData.data[dst]     = pixels[src];
+      imageData.data[dst + 1] = pixels[src + 1];
+      imageData.data[dst + 2] = pixels[src + 2];
+      imageData.data[dst + 3] = pixels[src + 3];
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
 
 // Convert dataset row to polyline points
 function getPolylinePoints(d: any, parcoords: any, dpr: number): [number, number][] {

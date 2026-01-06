@@ -2,7 +2,7 @@ import { getLineNameCanvas } from "./brush";
 import { canvasEl, lineState, parcoords } from "./globals";
 import { initHoverDetection, SelectionMode } from "./hover";
 // the backgrounds are generated using webgl
-import { initLineTextureWebGL, drawInactiveLinesTexture } from "./lineTexture";
+import { initLineTextureWebGL, drawInactiveLinesTexture, rasterizeInactiveLinesToCanvas } from "./lineTexture";
 
 let ctx: CanvasRenderingContext2D | null = null;
 let overlayCanvasEl: HTMLCanvasElement;
@@ -10,6 +10,7 @@ let overlayCtx: CanvasRenderingContext2D | null = null;
 
 // Background canvas
 let inactiveLinesCanvas: HTMLCanvasElement;
+let bgGlCanvas: HTMLCanvasElement | null = null;  // persistent canvas (offscreen) to render the inactive lines to before saving as a texture and putting it on the inactiveLinesCanvas
 
 let hoveredLineIds: Set<string> = new Set();
 let selectedLineIds: Set<string> = new Set();
@@ -159,20 +160,19 @@ export async function initCanvas2D(
   overlayCtx = overlayCanvasEl.getContext("2d")!;
   overlayCtx.setTransform(dpr, 0, 0, dpr, 0, 0); // 2D only
 
-  // create and intiialize the background texture
+  //create background lines image
   inactiveLinesCanvas = document.createElement("canvas");
   inactiveLinesCanvas.width = canvasEl.width;
   inactiveLinesCanvas.height = canvasEl.height;
+  inactiveLinesCanvas.style.position = "absolute";
+  inactiveLinesCanvas.style.pointerEvents = "none";
   inactiveLinesCanvas.style.width = canvasEl.style.width;
   inactiveLinesCanvas.style.height = canvasEl.style.height;
-  inactiveLinesCanvas.style.position = "absolute";
   inactiveLinesCanvas.style.top = canvasEl.style.top;
   inactiveLinesCanvas.style.left = canvasEl.style.left;
 
+  // Insert behind the main canvas
   canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);
-
-  // draw inactive lines into it
-  initLineTextureWebGL(inactiveLinesCanvas);
   redrawCanvas2DBackgroundLines(dataset, parcoords);
 
   await initHoverDetection(parcoords, onHoveredLinesChange);
@@ -182,7 +182,27 @@ export async function initCanvas2D(
 }
 
 export function redrawCanvas2DBackgroundLines(dataset: any[], parcoords: any) {
-  drawInactiveLinesTexture(dataset, parcoords);
+    if (!inactiveLinesCanvas) {
+        console.warn("Inactive background canvas not initialized");
+        return;
+    }
+
+    const w = inactiveLinesCanvas.width;
+    const h = inactiveLinesCanvas.height;
+
+    // Create the offscreen WebGL canvas once
+    if (!bgGlCanvas) {
+        bgGlCanvas = document.createElement("canvas");
+        bgGlCanvas.width = w;
+        bgGlCanvas.height = h;
+    }
+
+    // Initialize WebGL and draw the inactive lines
+    initLineTextureWebGL(bgGlCanvas);
+    drawInactiveLinesTexture(dataset, parcoords);
+
+    // Rasterize result into the 2D background canvas
+    rasterizeInactiveLinesToCanvas(inactiveLinesCanvas);
 }
 
 export function getSelectedIds(): Set<string> {

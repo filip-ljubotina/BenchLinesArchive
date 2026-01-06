@@ -2,7 +2,7 @@ import { canvasEl, lineState, parcoords } from "./globals";
 import { getLineNameCanvas } from "./brush";
 import { initHoverDetection, SelectionMode } from "./hover";
 // the backgrounds are generated using webgl
-import { initLineTextureWebGL, drawInactiveLinesTexture } from "./lineTexture";
+import { initLineTextureWebGL, drawInactiveLinesTexture, rasterizeInactiveLinesToCanvas } from "./lineTexture";
 
 let device: GPUDevice;
 let pipeline: GPURenderPipeline;
@@ -23,6 +23,7 @@ let dataset: any[] = [];
 
 // background image
 let inactiveLinesCanvas: HTMLCanvasElement;
+let bgGlCanvas: HTMLCanvasElement | null = null;  // persistent canvas (offscreen) to render the inactive lines to before saving as a texture and putting it on the inactiveLinesCanvas
 
 function getPolylinePoints(
   d: any,
@@ -217,16 +218,15 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
   inactiveLinesCanvas = document.createElement("canvas");
   inactiveLinesCanvas.width = canvasEl.width;
   inactiveLinesCanvas.height = canvasEl.height;
-  inactiveLinesCanvas.style.width = canvasEl.style.width;
-  inactiveLinesCanvas.style.height = canvasEl.style.height;
   inactiveLinesCanvas.style.position = "absolute";
   inactiveLinesCanvas.style.top = canvasEl.style.top;
   inactiveLinesCanvas.style.left = canvasEl.style.left;
+  inactiveLinesCanvas.style.pointerEvents = "none";
+  inactiveLinesCanvas.style.width = canvasEl.style.width;
+  inactiveLinesCanvas.style.height = canvasEl.style.height;
 
+  // Insert behind the main canvas
   canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);
-
-  // draw inactive lines into it
-  initLineTextureWebGL(inactiveLinesCanvas);
   redrawWebGPUBackgroundLines(dataset, parcoords);
 
   // Create a new shader module on the GPU device
@@ -472,8 +472,32 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
   setupCanvasClickHandling();
 }
 
+// export function redrawWebGPUBackgroundLines(dataset: any[], parcoords: any) {
+//   drawInactiveLinesTexture(dataset, parcoords);
+// }
+
 export function redrawWebGPUBackgroundLines(dataset: any[], parcoords: any) {
-  drawInactiveLinesTexture(dataset, parcoords);
+    if (!inactiveLinesCanvas) {
+        console.warn("Inactive background canvas not initialized");
+        return;
+    }
+
+    const w = inactiveLinesCanvas.width;
+    const h = inactiveLinesCanvas.height;
+
+    // Create the offscreen WebGL canvas once
+    if (!bgGlCanvas) {
+        bgGlCanvas = document.createElement("canvas");
+        bgGlCanvas.width = w;
+        bgGlCanvas.height = h;
+    }
+
+    // Initialize WebGL and draw the inactive lines
+    initLineTextureWebGL(bgGlCanvas);
+    drawInactiveLinesTexture(dataset, parcoords);
+
+    // Rasterize result into the 2D background canvas
+    rasterizeInactiveLinesToCanvas(inactiveLinesCanvas);
 }
 
 // Below function initializes WebGPU context and device
