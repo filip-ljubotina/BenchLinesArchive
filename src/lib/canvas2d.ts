@@ -61,7 +61,7 @@ function onHoveredLinesChange(
     // hoveredIds.forEach((id) => selectedLineIds.add(id));
     hoveredIds.forEach((id) => {
       if (!lineState[id] || lineState[id].active) {
-        hoveredLineIds.add(id);
+        selectedLineIds.add(id);
       }
     });
   }

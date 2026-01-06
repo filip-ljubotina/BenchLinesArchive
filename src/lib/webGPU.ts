@@ -2,7 +2,11 @@ import { canvasEl, lineState, parcoords } from "./globals";
 import { getLineNameCanvas } from "./brush";
 import { initHoverDetection, SelectionMode } from "./hover";
 // the backgrounds are generated using webgl
-import { initLineTextureWebGL, drawInactiveLinesTexture, rasterizeInactiveLinesToCanvas } from "./lineTexture";
+import {
+  initLineTextureWebGL,
+  drawInactiveLinesTexture,
+  rasterizeInactiveLinesToCanvas,
+} from "./lineTexture";
 
 let device: GPUDevice;
 let pipeline: GPURenderPipeline;
@@ -23,7 +27,7 @@ let dataset: any[] = [];
 
 // background image
 let inactiveLinesCanvas: HTMLCanvasElement;
-let bgGlCanvas: HTMLCanvasElement | null = null;  // persistent canvas (offscreen) to render the inactive lines to before saving as a texture and putting it on the inactiveLinesCanvas
+let bgGlCanvas: HTMLCanvasElement | null = null; // persistent canvas (offscreen) to render the inactive lines to before saving as a texture and putting it on the inactiveLinesCanvas
 
 function getPolylinePoints(
   d: any,
@@ -72,7 +76,7 @@ function onHoveredLinesChange(
     // hoveredIds.forEach((id) => selectedLineIds.add(id));
     hoveredIds.forEach((id) => {
       if (!lineState[id] || lineState[id].active) {
-        hoveredLineIds.add(id);
+        selectedLineIds.add(id);
       }
     });
   }
@@ -477,27 +481,27 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
 // }
 
 export function redrawWebGPUBackgroundLines(dataset: any[], parcoords: any) {
-    if (!inactiveLinesCanvas) {
-        console.warn("Inactive background canvas not initialized");
-        return;
-    }
+  if (!inactiveLinesCanvas) {
+    console.warn("Inactive background canvas not initialized");
+    return;
+  }
 
-    const w = inactiveLinesCanvas.width;
-    const h = inactiveLinesCanvas.height;
+  const w = inactiveLinesCanvas.width;
+  const h = inactiveLinesCanvas.height;
 
-    // Create the offscreen WebGL canvas once
-    if (!bgGlCanvas) {
-        bgGlCanvas = document.createElement("canvas");
-        bgGlCanvas.width = w;
-        bgGlCanvas.height = h;
-    }
+  // Create the offscreen WebGL canvas once
+  if (!bgGlCanvas) {
+    bgGlCanvas = document.createElement("canvas");
+    bgGlCanvas.width = w;
+    bgGlCanvas.height = h;
+  }
 
-    // Initialize WebGL and draw the inactive lines
-    initLineTextureWebGL(bgGlCanvas);
-    drawInactiveLinesTexture(dataset, parcoords);
+  // Initialize WebGL and draw the inactive lines
+  initLineTextureWebGL(bgGlCanvas);
+  drawInactiveLinesTexture(dataset, parcoords);
 
-    // Rasterize result into the 2D background canvas
-    rasterizeInactiveLinesToCanvas(inactiveLinesCanvas);
+  // Rasterize result into the 2D background canvas
+  rasterizeInactiveLinesToCanvas(inactiveLinesCanvas);
 }
 
 // Below function initializes WebGPU context and device
