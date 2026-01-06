@@ -420,7 +420,7 @@ export async function initHoverDetection(
    Geometry Upload
 ======================= */
 
-function updateLineDataBuffer(dataset: any[], parcoords: any): void {
+export function updateLineDataBuffer(dataset: any[], parcoords: any): void {
   if (!hoverState) return;
 
   const data = new Float32Array(hoverState.lineCount * MAX_POINTS_PER_LINE * 2);
@@ -500,7 +500,7 @@ export async function detectHoveredPolylines(
     // Store the last selection mode
     hoverState.lastSelectionMode = selectionMode;
 
-    console.log(`Selection via ${selectionMode}:`, hoveredList);
+    // console.log(`Selection via ${selectionMode}:`, hoveredList);
 
     // Pass selection mode to callback
     onHoveredLinesChange(hoveredList, selectionMode);

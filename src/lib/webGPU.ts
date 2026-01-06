@@ -1,6 +1,9 @@
 import { canvasEl, lineState, parcoords } from "./globals";
 import { getLineNameCanvas } from "./brush";
 import { initHoverDetection, SelectionMode } from "./hover";
+// the backgrounds are generated using webgl
+import { initLineTextureWebGL, drawInactiveLinesTexture } from "./lineTexture";
+
 
 let device: GPUDevice;
 let pipeline: GPURenderPipeline;
@@ -18,6 +21,9 @@ let overlayContext: GPUCanvasContext;
 let hoveredLineIds: Set<string> = new Set();
 let selectedLineIds: Set<string> = new Set();
 let dataset: any[] = [];
+
+// background image
+let inactiveLinesCanvas: HTMLCanvasElement;
 
 function getPolylinePoints(
   d: any,
@@ -55,10 +61,20 @@ function onHoveredLinesChange(
 ) {
   if (selectionMode === "hover") {
     hoveredLineIds.clear();
-    hoveredIds.forEach((id) => hoveredLineIds.add(id));
+    // hoveredIds.forEach((id) => hoveredLineIds.add(id));
+    hoveredIds.forEach((id) => {
+      if (lineState[id]?.active) {
+        hoveredLineIds.add(id);
+      }
+    });
   } else {
     selectedLineIds.clear();
-    hoveredIds.forEach((id) => selectedLineIds.add(id));
+    // hoveredIds.forEach((id) => selectedLineIds.add(id));
+    hoveredIds.forEach((id) => {
+      if (lineState[id]?.active) {
+        selectedLineIds.add(id);
+      }
+    });
   }
   redrawHoverOverlay();
 }
@@ -163,7 +179,7 @@ function setupCanvasClickHandling() {
   });
 }
 
-export async function initWebGPU() {
+export async function initWebGPU(dataset: any[], parcoords: any) {
   // Check if the GPU device is initialized
   if (!device)
     throw new Error(
@@ -197,6 +213,19 @@ export async function initWebGPU() {
     format: canvasFormat,
     alphaMode: "premultiplied",
   });
+
+  // create and intiialize the background texture
+  inactiveLinesCanvas = document.createElement("canvas");
+  inactiveLinesCanvas.width = canvasEl.width;
+  inactiveLinesCanvas.height = canvasEl.height;
+
+  canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);
+
+  // draw inactive lines into it
+  initLineTextureWebGL(inactiveLinesCanvas);
+  redrawWebGPUBackgroundLines(dataset, parcoords);
+  
+  
 
   // Create a new shader module on the GPU device
   const cellShaderModule = device.createShaderModule({
@@ -441,8 +470,12 @@ export async function initWebGPU() {
   setupCanvasClickHandling();
 }
 
+export function redrawWebGPUBackgroundLines(dataset: any[], parcoords: any) {
+  drawInactiveLinesTexture(dataset, parcoords);
+}
+
 // Below function initializes WebGPU context and device
-export async function initCanvasWebGPU() {
+export async function initCanvasWebGPU(dataset: any[], parcoords: any) {
   // console.log("Initializing WebGPU...");
 
   // The Navigator interface represents the state and the identity of the user agent.
@@ -460,7 +493,7 @@ export async function initCanvasWebGPU() {
 
   // console.log("WebGPU initialized successfully.");
 
-  initWebGPU();
+  initWebGPU(dataset, parcoords);
 }
 
 export function redrawWebGPULines(newDataset: any[], parcoords: any) {
@@ -495,6 +528,7 @@ export function redrawWebGPULines(newDataset: any[], parcoords: any) {
   for (const d of newDataset) {
     const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
+    if (!active) continue;
     const pts = getPolylinePoints(d, parcoords, dpr);
 
     if (pts.length >= 2) {

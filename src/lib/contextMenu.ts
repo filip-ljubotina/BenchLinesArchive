@@ -6,7 +6,8 @@ import * as helper from './helper';
 import * as api from './helperApiFunc';
 import * as icon from './icons/icons';
 import { parcoords, active, width, padding, paddingXaxis } from './globals';
-import { redrawPolylines } from './parallelcoordinates';
+import { redrawPolylines, redrawBackgroundPolylines } from './parallelcoordinates';
+import { updateLineDataBuffer } from './hover';
 
 let scrollXPos: number;
 let timer: string | number | NodeJS.Timeout;
@@ -497,7 +498,9 @@ function onDragEndEventHandler(featureAxis: any): any {
         select(this)
           .attr('d', helper.linePath(d, parcoords.newFeatures))
       });
+      redrawBackgroundPolylines(parcoords.data, parcoords);
       redrawPolylines(parcoords.newDataset, parcoords);
+      updateLineDataBuffer(parcoords.newDataset, parcoords);
     };
   }
 }
