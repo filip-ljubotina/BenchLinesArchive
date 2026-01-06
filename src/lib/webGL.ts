@@ -1,7 +1,7 @@
 import { getLineNameCanvas } from "./brush";
 import { canvasEl, lineState, parcoords, selected } from "./globals";
 import { initHoverDetection, SelectionMode } from "./hover";
-import { initLineTextureWebGL, drawInactiveLinesTexture } from "./lineTexture";
+import { initLineTextureWebGL, drawInactiveLinesTexture, rasterizeInactiveLinesToCanvas } from "./lineTexture";
 
 let gl: WebGLRenderingContext | null = null;
 let program: WebGLProgram;
@@ -13,6 +13,7 @@ let overlayProgram: WebGLProgram;
 
 // Background canvas
 let inactiveLinesCanvas: HTMLCanvasElement;
+let bgGlCanvas: HTMLCanvasElement | null = null;  // persistent canvas (offscreen) to render the inactive lines to before saving as a texture and putting it on the inactiveLinesCanvas
 
 // Persistent buffers
 let vertexBuffer: WebGLBuffer | null = null;
@@ -214,18 +215,32 @@ export async function initCanvasWebGL(dataset: any[], parcoords: any) {
   initOverlayWebGL();
 
   // create and intiialize the background texture
+  // inactiveLinesCanvas = document.createElement("canvas");
+  // inactiveLinesCanvas.width = canvasEl.width;
+  // inactiveLinesCanvas.height = canvasEl.height;
+
+  // canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);
+
+  // // draw inactive lines into it
+  // initLineTextureWebGL(inactiveLinesCanvas);
+  // redrawWebGLBackgroundLines(dataset, parcoords);
+
+  //create background lines image
   inactiveLinesCanvas = document.createElement("canvas");
   inactiveLinesCanvas.width = canvasEl.width;
   inactiveLinesCanvas.height = canvasEl.height;
+  inactiveLinesCanvas.style.position = "absolute";
+  inactiveLinesCanvas.style.top = canvasEl.style.top;
+  inactiveLinesCanvas.style.left = canvasEl.style.left;
+  inactiveLinesCanvas.style.pointerEvents = "none";
 
+  // Insert behind the main canvas
   canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);
 
-  // draw inactive lines into it
-  initLineTextureWebGL(inactiveLinesCanvas);
+  // initLineTextureWebGL(bgGlCanvas);
+  // drawInactiveLinesTexture(dataset, parcoords);
   redrawWebGLBackgroundLines(dataset, parcoords);
-
   
-
   await initHoverDetection(parcoords, onHoveredLinesChange);
   setupCanvasClickHandling();
 
@@ -233,7 +248,27 @@ export async function initCanvasWebGL(dataset: any[], parcoords: any) {
 }
 
 export function redrawWebGLBackgroundLines(dataset: any[], parcoords: any) {
-  drawInactiveLinesTexture(dataset, parcoords);
+    if (!inactiveLinesCanvas) {
+        console.warn("Inactive background canvas not initialized");
+        return;
+    }
+
+    const w = inactiveLinesCanvas.width;
+    const h = inactiveLinesCanvas.height;
+
+    // Create the offscreen WebGL canvas once
+    if (!bgGlCanvas) {
+        bgGlCanvas = document.createElement("canvas");
+        bgGlCanvas.width = w;
+        bgGlCanvas.height = h;
+    }
+
+    // Initialize WebGL and draw the inactive lines
+    initLineTextureWebGL(bgGlCanvas);
+    drawInactiveLinesTexture(dataset, parcoords);
+
+    // Rasterize result into the 2D background canvas
+    rasterizeInactiveLinesToCanvas(inactiveLinesCanvas);
 }
 
 // Convert dataset row to polyline points
