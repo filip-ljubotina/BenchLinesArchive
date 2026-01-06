@@ -750,7 +750,7 @@ export function drawChart(content: any[]): void {
       redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
       break;
     case "WebGLPixi":
-      initCanvasWebGLPixiJS()
+      initCanvasWebGLPixiJS();
       redrawWebGLLinesPixiJS(parcoords.newDataset, parcoords);
       break;
     case "WebGPU":
