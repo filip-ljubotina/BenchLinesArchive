@@ -51,7 +51,7 @@ function onHoveredLinesChange(
     hoveredLineIds.clear();
     // hoveredIds.forEach((id) => hoveredLineIds.add(id));
     hoveredIds.forEach((id) => {
-      if (lineState[id]?.active) {
+      if (!lineState[id] || lineState[id].active) {
         hoveredLineIds.add(id);
       }
     });
@@ -59,8 +59,8 @@ function onHoveredLinesChange(
     selectedLineIds.clear();
     // hoveredIds.forEach((id) => selectedLineIds.add(id));
     hoveredIds.forEach((id) => {
-      if (lineState[id]?.active) {
-        selectedLineIds.add(id);
+      if (!lineState[id] || lineState[id].active) {
+        hoveredLineIds.add(id);
       }
     });
   }
@@ -125,7 +125,7 @@ export function redrawCanvasLines(newDataset: any, parcoords: any) {
   for (const d of newDataset) {
     const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
-    if (!active) continue;     // skip inactive lines
+    if (!active) continue; // skip inactive lines
 
     const pts = getPolylinePoints(d, parcoords);
     if (!pts.length) continue;
@@ -146,7 +146,11 @@ export function redrawCanvasLines(newDataset: any, parcoords: any) {
   redrawHoverOverlay();
 }
 
-export async function initCanvas2D(dpr: number, dataset: any[], parcoords: any) {
+export async function initCanvas2D(
+  dpr: number,
+  dataset: any[],
+  parcoords: any
+) {
   ctx = canvasEl.getContext("2d")!;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // 2D only
 
@@ -159,6 +163,11 @@ export async function initCanvas2D(dpr: number, dataset: any[], parcoords: any) 
   inactiveLinesCanvas = document.createElement("canvas");
   inactiveLinesCanvas.width = canvasEl.width;
   inactiveLinesCanvas.height = canvasEl.height;
+  inactiveLinesCanvas.style.width = canvasEl.style.width;
+  inactiveLinesCanvas.style.height = canvasEl.style.height;
+  inactiveLinesCanvas.style.position = "absolute";
+  inactiveLinesCanvas.style.top = canvasEl.style.top;
+  inactiveLinesCanvas.style.left = canvasEl.style.left;
 
   canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);
 

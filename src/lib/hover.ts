@@ -319,7 +319,7 @@ export async function initHoverDetection(
     compute: { module: shaderModule, entryPoint: "main" },
   });
 
-  const mouseMoveHandler = (e: MouseEvent) => {
+  const mouseMoveHandler = async (e: MouseEvent) => {
     if (!hoverState) return;
 
     const r = plotArea.getBoundingClientRect();
@@ -338,13 +338,19 @@ export async function initHoverDetection(
       );
     } else {
       hoverState.queue.writeBuffer(drawModeBuffer, 0, new Uint32Array([0]));
-      detectHoveredPolylines(x, y, parcoords, onHoveredLinesChange, "hover");
+      await detectHoveredPolylines(
+        x,
+        y,
+        parcoords,
+        onHoveredLinesChange,
+        "hover"
+      );
     }
   };
 
   const mouseDownHandler = (e: MouseEvent) => {
     if (e.shiftKey) return;
-    
+
     const r = plotArea.getBoundingClientRect();
 
     drawState.isDrawing = true;
@@ -356,7 +362,7 @@ export async function initHoverDetection(
     startSvgDraw(drawState.startX, drawState.startY);
   };
 
-  const mouseUpHandler = () => {
+  const mouseUpHandler = async () => {
     if (!hoverState || !drawState.isDrawing) return;
 
     drawState.isDrawing = false;
@@ -378,7 +384,7 @@ export async function initHoverDetection(
 
     hoverState.queue.writeBuffer(drawModeBuffer, 0, new Uint32Array([mode]));
 
-    detectHoveredPolylines(
+    await detectHoveredPolylines(
       drawState.endX,
       drawState.endY,
       parcoords,
@@ -500,7 +506,7 @@ export async function detectHoveredPolylines(
     // Store the last selection mode
     hoverState.lastSelectionMode = selectionMode;
 
-    // console.log(`Selection via ${selectionMode}:`, hoveredList);
+    //console.log(`Selection via ${selectionMode}:`, hoveredList);
 
     // Pass selection mode to callback
     onHoveredLinesChange(hoveredList, selectionMode);
