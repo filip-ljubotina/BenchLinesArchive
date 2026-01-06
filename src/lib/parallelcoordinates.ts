@@ -15,6 +15,7 @@ import {
 } from "./webGL";
 import { initPixiCanvas2D, redrawPixiCanvasLines } from "./canvas2dPixi";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
+import { initCanvasWebGLPixiJS, redrawWebGLLinesPixiJS } from "./webGL_pixi";
 import {
   initCanvasWebGPU,
   redrawWebGPUBackgroundLines,
@@ -504,9 +505,9 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
     case "WebGLThree":
       redrawWebGLLinesThreeJS(dataset, parcoords);
       break;
-    // case "WebGLPixi":
-    //   redrawWebGLLinesPixiJS(dataset, parcoords);
-    //   break;
+    case "WebGLPixi":
+      redrawWebGLLinesPixiJS(dataset, parcoords);
+      break;
     case "WebGPU":
       redrawWebGPULines(dataset, parcoords);
       break;
@@ -590,6 +591,10 @@ export async function setupTechnology(
     case "WebGLThree":
       recreateCanvas();
       initCanvasWebGLThreeJS(dataset, parcoords);
+      break;
+    case "WebGLPixi":
+      recreateCanvas();
+      initCanvasWebGLPixiJS();
       break;
     case "WebGPU":
       recreateCanvas();
@@ -743,6 +748,10 @@ export function drawChart(content: any[]): void {
     case "WebGLThree":
       initCanvasWebGLThreeJS(parcoords.newDataset, parcoords);
       redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
+      break;
+    case "WebGLPixi":
+      initCanvasWebGLPixiJS()
+      redrawWebGLLinesPixiJS(parcoords.newDataset, parcoords);
       break;
     case "WebGPU":
       initCanvasWebGPU(parcoords.newDataset, parcoords)
