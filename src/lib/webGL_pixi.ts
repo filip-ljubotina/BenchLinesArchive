@@ -1,8 +1,8 @@
-import { getLineName } from "./brush";
+import { getLineNameCanvas } from "./brush";
 import { canvasEl, lineState } from "./globals";
 import * as PIXI from "pixi.js-legacy";
 
-let renderer: PIXI.Renderer | null = null;
+let renderer: PIXI.Renderer | null = null;  // WebGL renderer
 let stage: PIXI.Container | null = null;
 let linesContainer: PIXI.Container | null = null;
 
@@ -28,7 +28,7 @@ export function redrawWebGLLinesPixiJS(dataset: any[], parcoords: any) {
   lineGraphics.clear();
 
   for (const d of dataset) {
-    const id = getLineName(d);
+    const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
 
     const pts = getPolylinePoints(d, parcoords);
@@ -54,7 +54,6 @@ export function redrawWebGLLinesPixiJS(dataset: any[], parcoords: any) {
 }
 
 export function initCanvasWebGLPixiJS() {
-  // if (renderer) return renderer;
   const dpr = window.devicePixelRatio || 1;
   renderer = new PIXI.Renderer({
     view: canvasEl,
@@ -62,7 +61,6 @@ export function initCanvasWebGLPixiJS() {
     height: canvasEl.height / dpr,
     resolution: dpr,
     backgroundAlpha: 0,
-    antialias: true,
     autoDensity: true,
     clearBeforeRender: true,
   });
@@ -76,7 +74,7 @@ export function initCanvasWebGLPixiJS() {
 
 export function destroyPixiRenderer() {
   if (renderer) {
-    renderer.destroy();
+    renderer.destroy(true); // destroy WebGL resources
     renderer = null;
   }
   if (stage) {

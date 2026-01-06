@@ -195,6 +195,7 @@ export function getAllWebTechOptions(): GraphicsWebTech[] {
     "SVG-DOM",
     "WebGL",
     "WebGLThree",
+    "WebGLPixi",
     "WebGPU",
     "WebGPU-Three",
     "WebGPU-Pixi",
