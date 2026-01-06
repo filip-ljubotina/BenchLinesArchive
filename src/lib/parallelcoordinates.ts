@@ -3,11 +3,23 @@ import { easeCubic } from "d3-ease";
 import { select, selectAll } from "d3-selection";
 import "d3-transition";
 import * as brush from "./brush";
-import { initCanvas2D, redrawCanvas2DBackgroundLines, redrawCanvasLines } from "./canvas2d";
-import { initCanvasWebGL, redrawWebGLLines, redrawWebGLBackgroundLines } from "./webGL";
+import {
+  initCanvas2D,
+  redrawCanvas2DBackgroundLines,
+  redrawCanvasLines,
+} from "./canvas2d";
+import {
+  initCanvasWebGL,
+  redrawWebGLLines,
+  redrawWebGLBackgroundLines,
+} from "./webGL";
 import { initPixiCanvas2D, redrawPixiCanvasLines } from "./canvas2dPixi";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
-import { initCanvasWebGPU, redrawWebGPUBackgroundLines, redrawWebGPULines } from "./webGPU";
+import {
+  initCanvasWebGPU,
+  redrawWebGPUBackgroundLines,
+  redrawWebGPULines,
+} from "./webGPU";
 import {
   initCanvasWebGPUThreeJS,
   redrawWebGPULinesThreeJS,
@@ -53,6 +65,7 @@ import * as api from "./helperApiFunc";
 import * as icon from "./icons/icons";
 import * as toolbar from "./toolbar";
 import * as utils from "./utils";
+import { updateLineDataBuffer } from "./hover";
 
 declare const window: any;
 
@@ -544,7 +557,11 @@ export function redrawBackgroundPolylines(dataset: any[], parcoords: any) {
   }
 }
 
-export async function setupTechnology(tech: string, dataset: any[], parcoords: any) {
+export async function setupTechnology(
+  tech: string,
+  dataset: any[],
+  parcoords: any
+) {
   const dpr = window.devicePixelRatio || 1;
 
   switch (tech) {
@@ -557,7 +574,14 @@ export async function setupTechnology(tech: string, dataset: any[], parcoords: a
       initPixiCanvas2D(dpr);
       break;
     case "SVG-DOM":
-      // SVG setup if needed
+      svg
+        .on("contextmenu", (event: any) => {
+          event.stopPropagation();
+          event.preventDefault();
+        })
+        .on("mouseenter", () => helper.cleanTooltip())
+        .on("click", () => clearSelection())
+        .on("mousedown.selection", (event: any) => event.preventDefault());
       break;
     case "WebGL":
       recreateCanvas();
@@ -690,7 +714,9 @@ export function drawChart(content: any[]): void {
   switch (currWebTech) {
     case "Canvas2D":
       initCanvas2D(dpr, parcoords.newDataset, parcoords);
+      redrawBackgroundPolylines(parcoords.data, parcoords);
       redrawCanvasLines(parcoords.newDataset, parcoords);
+      updateLineDataBuffer(parcoords.newDataset, parcoords);
       break;
     case "Canvas2DPixi":
       initPixiCanvas2D(dpr);
@@ -710,7 +736,9 @@ export function drawChart(content: any[]): void {
       break;
     case "WebGL":
       initCanvasWebGL(parcoords.newDataset, parcoords);
+      redrawBackgroundPolylines(parcoords.data, parcoords);
       redrawWebGLLines(parcoords.newDataset, parcoords);
+      updateLineDataBuffer(parcoords.newDataset, parcoords);
       break;
     case "WebGLThree":
       initCanvasWebGLThreeJS(parcoords.newDataset, parcoords);
@@ -719,7 +747,9 @@ export function drawChart(content: any[]): void {
     case "WebGPU":
       initCanvasWebGPU(parcoords.newDataset, parcoords)
         .then(() => {
+          redrawBackgroundPolylines(parcoords.data, parcoords);
           redrawWebGPULines(parcoords.newDataset, parcoords);
+          updateLineDataBuffer(parcoords.newDataset, parcoords);
         })
         .catch((err) => console.error("WebGPU init failed:", err));
       break;

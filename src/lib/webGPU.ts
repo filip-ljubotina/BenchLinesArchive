@@ -4,7 +4,6 @@ import { initHoverDetection, SelectionMode } from "./hover";
 // the backgrounds are generated using webgl
 import { initLineTextureWebGL, drawInactiveLinesTexture, rasterizeInactiveLinesToCanvas } from "./lineTexture";
 
-
 let device: GPUDevice;
 let pipeline: GPURenderPipeline;
 let pass: GPURenderPassEncoder;
@@ -64,7 +63,7 @@ function onHoveredLinesChange(
     hoveredLineIds.clear();
     // hoveredIds.forEach((id) => hoveredLineIds.add(id));
     hoveredIds.forEach((id) => {
-      if (lineState[id]?.active) {
+      if (!lineState[id] || lineState[id].active) {
         hoveredLineIds.add(id);
       }
     });
@@ -72,8 +71,8 @@ function onHoveredLinesChange(
     selectedLineIds.clear();
     // hoveredIds.forEach((id) => selectedLineIds.add(id));
     hoveredIds.forEach((id) => {
-      if (lineState[id]?.active) {
-        selectedLineIds.add(id);
+      if (!lineState[id] || lineState[id].active) {
+        hoveredLineIds.add(id);
       }
     });
   }
@@ -223,6 +222,8 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
   inactiveLinesCanvas.style.top = canvasEl.style.top;
   inactiveLinesCanvas.style.left = canvasEl.style.left;
   inactiveLinesCanvas.style.pointerEvents = "none";
+  inactiveLinesCanvas.style.width = canvasEl.style.width;
+  inactiveLinesCanvas.style.height = canvasEl.style.height;
 
   // Insert behind the main canvas
   canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);

@@ -148,7 +148,7 @@ function onHoveredLinesChange(
     hoveredLineIds.clear();
     // hoveredIds.forEach((id) => hoveredLineIds.add(id));
     hoveredIds.forEach((id) => {
-      if (lineState[id]?.active) {
+      if (!lineState[id] || lineState[id].active) {
         hoveredLineIds.add(id);
       }
     });
@@ -156,8 +156,8 @@ function onHoveredLinesChange(
     selectedLineIds.clear();
     // hoveredIds.forEach((id) => selectedLineIds.add(id));
     hoveredIds.forEach((id) => {
-      if (lineState[id]?.active) {
-        selectedLineIds.add(id);
+      if (!lineState[id] || lineState[id].active) {
+        hoveredLineIds.add(id);
       }
     });
   }
@@ -233,14 +233,16 @@ export async function initCanvasWebGL(dataset: any[], parcoords: any) {
   inactiveLinesCanvas.style.top = canvasEl.style.top;
   inactiveLinesCanvas.style.left = canvasEl.style.left;
   inactiveLinesCanvas.style.pointerEvents = "none";
+  inactiveLinesCanvas.style.width = canvasEl.style.width;
+  inactiveLinesCanvas.style.height = canvasEl.style.height;
 
   // Insert behind the main canvas
   canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);
 
   // initLineTextureWebGL(bgGlCanvas);
   // drawInactiveLinesTexture(dataset, parcoords);
-  redrawWebGLBackgroundLines(dataset, parcoords);
-  
+  redrawWebGLBackgroundLines(dataset, parcoords);  
+
   await initHoverDetection(parcoords, onHoveredLinesChange);
   setupCanvasClickHandling();
 
@@ -296,7 +298,7 @@ function redrawHoverOverlay() {
     overlayCanvasEl.width,
     overlayCanvasEl.height
   );
-  overlayGl.clearColor(0,0,0,0);
+  overlayGl.clearColor(0, 0, 0, 0);
   overlayGl.clear(overlayGl.COLOR_BUFFER_BIT);
 
   const dpr = window.devicePixelRatio || 1;
@@ -370,7 +372,7 @@ export function redrawWebGLLines(newDataset: any[], parcoords: any) {
   gl.useProgram(program);
   gl.uniform2f(resolutionLoc, canvasEl.width, canvasEl.height);
   gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT);  // clears active lines canvas
+  gl.clear(gl.COLOR_BUFFER_BIT); // clears active lines canvas
 
   const dpr = window.devicePixelRatio || 1;
 
@@ -380,7 +382,7 @@ export function redrawWebGLLines(newDataset: any[], parcoords: any) {
   for (const d of newDataset) {
     const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
-    if (!active) continue;     // skip inactive lines
+    if (!active) continue; // skip inactive lines
     const pts = getPolylinePoints(d, parcoords, dpr);
     if (pts.length < 2) continue;
 
