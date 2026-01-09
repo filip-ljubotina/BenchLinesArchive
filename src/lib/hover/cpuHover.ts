@@ -1,10 +1,3 @@
-/* =======================
-   CPU Backend for Hover Detection
-   
-   JavaScript-based fallback implementation of hover/selection detection.
-   Used when WebGPU is not available.
-======================= */
-
 import {
   IHoverDetectionBackend,
   HoverDetectionConfig,
@@ -17,12 +10,9 @@ export class CPUHoverBackend implements IHoverDetectionBackend {
   private config: HoverDetectionConfig = DEFAULT_CONFIG;
   private lineData: Float32Array | null = null;
 
-  // Dimension X positions for segment filtering optimization
   private dimensionXPositions: number[] = [];
-  private actualPointsPerLine: number = 0;
 
   isAvailable(): boolean {
-    // CPU backend is always available
     return true;
   }
 
@@ -31,7 +21,6 @@ export class CPUHoverBackend implements IHoverDetectionBackend {
     this.config = config;
     this.lineData = null;
     this.dimensionXPositions = [];
-    this.actualPointsPerLine = 0;
   }
 
   updateLineData(lineData: Float32Array): void {
@@ -39,35 +28,23 @@ export class CPUHoverBackend implements IHoverDetectionBackend {
     this.extractDimensionPositions();
   }
 
-  /**
-   * Extract dimension X positions from the first polyline.
-   * All polylines share the same X coordinates (dimension positions).
-   */
   private extractDimensionPositions(): void {
     if (!this.lineData || this.lineCount === 0) return;
 
     this.dimensionXPositions = [];
     const maxPts = this.config.maxPointsPerLine;
 
-    // Read X positions from the first polyline until we hit invalid data
     for (let i = 0; i < maxPts; i++) {
       const idx = i * 2;
       const x = this.lineData[idx];
       const y = this.lineData[idx + 1];
 
-      // Stop if we hit zero/invalid coordinates (unfilled buffer space)
       if (i > 0 && x === 0 && y === 0) break;
 
       this.dimensionXPositions.push(x);
     }
-
-    this.actualPointsPerLine = this.dimensionXPositions.length;
   }
 
-  /**
-   * Find which segment index a given X coordinate falls into.
-   * Returns the index of the left dimension, or -1 if outside all segments.
-   */
   private findSegmentIndex(x: number): number {
     const positions = this.dimensionXPositions;
     if (positions.length < 2) return -1;
@@ -76,7 +53,6 @@ export class CPUHoverBackend implements IHoverDetectionBackend {
       const leftX = positions[i];
       const rightX = positions[i + 1];
 
-      // Check if x is between these two dimensions
       const minX = Math.min(leftX, rightX);
       const maxX = Math.max(leftX, rightX);
 
@@ -88,10 +64,6 @@ export class CPUHoverBackend implements IHoverDetectionBackend {
     return -1;
   }
 
-  /**
-   * Find the range of segment indices that a horizontal range spans.
-   * Returns [startIdx, endIdx] inclusive, or [-1, -1] if no overlap.
-   */
   private findSegmentRange(minX: number, maxX: number): [number, number] {
     const positions = this.dimensionXPositions;
     if (positions.length < 2) return [-1, -1];
@@ -103,7 +75,6 @@ export class CPUHoverBackend implements IHoverDetectionBackend {
       const segMinX = Math.min(positions[i], positions[i + 1]);
       const segMaxX = Math.max(positions[i], positions[i + 1]);
 
-      // Check if this segment overlaps with the query range
       if (segMaxX >= minX && segMinX <= maxX) {
         if (startIdx === -1) startIdx = i;
         endIdx = i;
@@ -122,11 +93,9 @@ export class CPUHoverBackend implements IHoverDetectionBackend {
     const { hoverDistance } = this.config;
 
     if (params.mode === "hover") {
-      // For hover, find the single segment the mouse is in
       const segIdx = this.findSegmentIndex(params.mouseX);
 
       if (segIdx === -1) {
-        // Mouse is outside all segments, no hits possible
         return results;
       }
 
@@ -199,10 +168,6 @@ export class CPUHoverBackend implements IHoverDetectionBackend {
     this.dimensionXPositions = [];
   }
 
-  /* =======================
-     Optimized Detection (Single Segment)
-  ======================= */
-
   private detectHoverInSegment(
     lineIdx: number,
     segmentIdx: number,
@@ -228,10 +193,6 @@ export class CPUHoverBackend implements IHoverDetectionBackend {
     );
     return dist < hoverDistance;
   }
-
-  /* =======================
-     Optimized Detection (Segment Range)
-  ======================= */
 
   private detectLineIntersectionInRange(
     lineIdx: number,
@@ -309,10 +270,6 @@ export class CPUHoverBackend implements IHoverDetectionBackend {
     return false;
   }
 
-  /* =======================
-     Geometry Helpers
-  ======================= */
-
   private pointToSegmentDistance(
     px: number,
     py: number,
@@ -367,7 +324,6 @@ export class CPUHoverBackend implements IHoverDetectionBackend {
     minY: number,
     maxY: number
   ): boolean {
-    // Check if either endpoint is inside the box
     if (
       (p1x >= minX && p1x <= maxX && p1y >= minY && p1y <= maxY) ||
       (p2x >= minX && p2x <= maxX && p2y >= minY && p2y <= maxY)
@@ -375,7 +331,6 @@ export class CPUHoverBackend implements IHoverDetectionBackend {
       return true;
     }
 
-    // Check intersection with each of the four box edges
     const edges: [number, number, number, number][] = [
       [minX, minY, maxX, minY], // top
       [maxX, minY, maxX, maxY], // right
