@@ -65,7 +65,7 @@ import * as api from "./helperApiFunc";
 import * as icon from "./icons/icons";
 import * as toolbar from "./toolbar";
 import * as utils from "./utils";
-import { updateLineDataBuffer } from "./hover";
+import { updateLineDataBuffer } from "./hover/hover";
 
 declare const window: any;
 

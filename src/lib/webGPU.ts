@@ -1,6 +1,6 @@
-import { canvasEl, lineState, parcoords } from "./globals";
+import { canvasEl, drawState, lineState, parcoords } from "./globals";
 import { getLineNameCanvas } from "./brush";
-import { initHoverDetection, SelectionMode } from "./hover";
+import { initHoverDetection, SelectionMode } from "./hover/hover";
 // the backgrounds are generated using webgl
 import {
   initLineTextureWebGL,
@@ -175,9 +175,11 @@ function setupCanvasClickHandling() {
       if (hoveredLineIds.size > 0) {
         hoveredLineIds.forEach((id) => selectedLineIds.add(id));
       }
-    } else {
+    } else if (drawState.wasDrawing === false) {
       // Regular click: clear selected
       selectedLineIds.clear();
+    } else {
+      drawState.wasDrawing = false;
     }
     redrawHoverOverlay();
   });
@@ -432,7 +434,7 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
   device.queue.writeBuffer(
     selectedColorBuffer,
     0,
-    new Float32Array([1.0, 1.0, 0.0, 0.8]) // Yellow with alpha 0.8
+    new Float32Array([1.0, 0.502, 0.0, 0.98]) // Yellow with alpha 0.8
   );
 
   // Create bind groups for each color

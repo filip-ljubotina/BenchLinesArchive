@@ -2,8 +2,8 @@ import * as THREE from "three/webgpu";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { getLineNameCanvas } from "./brush";
-import { canvasEl, lineState, parcoords } from "./globals";
-import { initHoverDetection, SelectionMode } from "./hover";
+import { canvasEl, drawState, lineState, parcoords } from "./globals";
+import { initHoverDetection, SelectionMode } from "./hover/hover";
 import {
   clearDataPointLabels,
   createLabelsContainer,
@@ -97,7 +97,7 @@ export async function initCanvasWebGPUThreeJS() {
     alphaToCoverage: true,
   });
   selectedLineMaterial = new THREE.Line2NodeMaterial({
-    color: 0xffff00,
+    color: 0xff8000,
     linewidth: 4,
     worldUnits: false,
     alphaToCoverage: true,
@@ -138,7 +138,7 @@ function onHoveredLinesChange(
     hoveredLineIds.clear();
     hoveredIds.forEach((id) => hoveredLineIds.add(id));
     if (hoveredIds.length > 0) {
-      const data = dataset.find(d => getLineNameCanvas(d) === hoveredIds[0]);
+      const data = dataset.find((d) => getLineNameCanvas(d) === hoveredIds[0]);
       if (data) {
         showDataPointLabels(currentParcoords, data);
       }
@@ -161,9 +161,11 @@ function onCanvasClick(event: MouseEvent) {
     if (hoveredLineIds.size > 0) {
       hoveredLineIds.forEach((id) => selectedLineIds.add(id));
     }
-  } else {
+  } else if (drawState.wasDrawing === false) {
     // Regular click: clear selected
     selectedLineIds.clear();
+  } else {
+    drawState.wasDrawing = false;
   }
   updateLineMaterials();
   if (renderer && scene && camera) {

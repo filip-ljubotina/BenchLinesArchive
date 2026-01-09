@@ -1,3 +1,5 @@
+import { DrawState } from "./hover/hoverTypes";
+
 export let padding: number;
 export let paddingXaxis: number;
 export let width: number;
@@ -56,7 +58,29 @@ export type DatasetName =
   | "20D_100000";
 export let currDataset: DatasetName = "student_dataset";
 export const lineState: Record<string, { active: boolean }> = {};
-export let activeTool = "rectangle";
+export let activeTool = "line";
+
+export const drawState: DrawState = {
+  isDrawing: false,
+  wasDrawing: false,
+  startX: 0,
+  startY: 0,
+  endX: 0,
+  endY: 0,
+};
+
+export function resetDrawState(): void {
+  drawState.isDrawing = false;
+  drawState.wasDrawing = false;
+  drawState.startX = 0;
+  drawState.startY = 0;
+  drawState.endX = 0;
+  drawState.endY = 0;
+}
+
+export function getDrawState(): DrawState {
+  return drawState;
+}
 
 export type BenchmarkData = {
   numOfIterations: number | null;

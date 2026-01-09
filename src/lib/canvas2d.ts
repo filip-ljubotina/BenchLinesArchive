@@ -1,8 +1,18 @@
 import { getLineNameCanvas } from "./brush";
-import { canvasEl, lineState, parcoords } from "./globals";
-import { initHoverDetection, SelectionMode } from "./hover";
+import {
+  canvasEl,
+  drawState,
+  getDrawState,
+  lineState,
+  parcoords,
+} from "./globals";
+import { initHoverDetection, SelectionMode } from "./hover/hover";
 // the backgrounds are generated using webgl
-import { initLineTextureWebGL, drawInactiveLinesTexture, rasterizeInactiveLinesToCanvas } from "./lineTexture";
+import {
+  initLineTextureWebGL,
+  drawInactiveLinesTexture,
+  rasterizeInactiveLinesToCanvas,
+} from "./lineTexture";
 
 let ctx: CanvasRenderingContext2D | null = null;
 let overlayCanvasEl: HTMLCanvasElement;
@@ -10,7 +20,7 @@ let overlayCtx: CanvasRenderingContext2D | null = null;
 
 // Background canvas
 let inactiveLinesCanvas: HTMLCanvasElement;
-let bgGlCanvas: HTMLCanvasElement | null = null;  // persistent canvas (offscreen) to render the inactive lines to before saving as a texture and putting it on the inactiveLinesCanvas
+let bgGlCanvas: HTMLCanvasElement | null = null; // persistent canvas (offscreen) to render the inactive lines to before saving as a texture and putting it on the inactiveLinesCanvas
 
 let hoveredLineIds: Set<string> = new Set();
 let selectedLineIds: Set<string> = new Set();
@@ -77,9 +87,11 @@ function setupCanvasClickHandling() {
       if (hoveredLineIds.size > 0) {
         hoveredLineIds.forEach((id) => selectedLineIds.add(id));
       }
-    } else {
+    } else if (drawState.wasDrawing === false) {
       // Regular click: clear selected
       selectedLineIds.clear();
+    } else {
+      drawState.wasDrawing = false;
     }
     redrawHoverOverlay();
   });
@@ -89,7 +101,6 @@ function redrawHoverOverlay() {
   if (!overlayCtx || !overlayCanvasEl || dataset.length === 0) return;
 
   overlayCtx.clearRect(0, 0, overlayCanvasEl.width, overlayCanvasEl.height);
-
   for (const d of dataset) {
     const id = getLineNameCanvas(d);
     const isHovered = hoveredLineIds.has(id);
@@ -108,7 +119,7 @@ function redrawHoverOverlay() {
 
     overlayCtx.lineWidth = 2;
     overlayCtx.strokeStyle = isSelected
-      ? "rgba(255, 255, 0, 0.8)" // Yellow for selected
+      ? "rgba(255, 128, 0, 0.98)"
       : "rgba(255, 0, 0, 0.8)"; // Red for hovered
 
     overlayCtx.stroke();
@@ -182,27 +193,27 @@ export async function initCanvas2D(
 }
 
 export function redrawCanvas2DBackgroundLines(dataset: any[], parcoords: any) {
-    if (!inactiveLinesCanvas) {
-        console.warn("Inactive background canvas not initialized");
-        return;
-    }
+  if (!inactiveLinesCanvas) {
+    console.warn("Inactive background canvas not initialized");
+    return;
+  }
 
-    const w = inactiveLinesCanvas.width;
-    const h = inactiveLinesCanvas.height;
+  const w = inactiveLinesCanvas.width;
+  const h = inactiveLinesCanvas.height;
 
-    // Create the offscreen WebGL canvas once
-    if (!bgGlCanvas) {
-        bgGlCanvas = document.createElement("canvas");
-        bgGlCanvas.width = w;
-        bgGlCanvas.height = h;
-    }
+  // Create the offscreen WebGL canvas once
+  if (!bgGlCanvas) {
+    bgGlCanvas = document.createElement("canvas");
+    bgGlCanvas.width = w;
+    bgGlCanvas.height = h;
+  }
 
-    // Initialize WebGL and draw the inactive lines
-    initLineTextureWebGL(bgGlCanvas);
-    drawInactiveLinesTexture(dataset, parcoords);
+  // Initialize WebGL and draw the inactive lines
+  initLineTextureWebGL(bgGlCanvas);
+  drawInactiveLinesTexture(dataset, parcoords);
 
-    // Rasterize result into the 2D background canvas
-    rasterizeInactiveLinesToCanvas(inactiveLinesCanvas);
+  // Rasterize result into the 2D background canvas
+  rasterizeInactiveLinesToCanvas(inactiveLinesCanvas);
 }
 
 export function getSelectedIds(): Set<string> {

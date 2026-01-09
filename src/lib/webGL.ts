@@ -1,7 +1,11 @@
 import { getLineNameCanvas } from "./brush";
-import { canvasEl, lineState, parcoords, selected } from "./globals";
-import { initHoverDetection, SelectionMode } from "./hover";
-import { initLineTextureWebGL, drawInactiveLinesTexture, rasterizeInactiveLinesToCanvas } from "./lineTexture";
+import { canvasEl, drawState, lineState, parcoords, selected } from "./globals";
+import { initHoverDetection, SelectionMode } from "./hover/hover";
+import {
+  initLineTextureWebGL,
+  drawInactiveLinesTexture,
+  rasterizeInactiveLinesToCanvas,
+} from "./lineTexture";
 
 let gl: WebGLRenderingContext | null = null;
 let program: WebGLProgram;
@@ -13,7 +17,7 @@ let overlayProgram: WebGLProgram;
 
 // Background canvas
 let inactiveLinesCanvas: HTMLCanvasElement;
-let bgGlCanvas: HTMLCanvasElement | null = null;  // persistent canvas (offscreen) to render the inactive lines to before saving as a texture and putting it on the inactiveLinesCanvas
+let bgGlCanvas: HTMLCanvasElement | null = null; // persistent canvas (offscreen) to render the inactive lines to before saving as a texture and putting it on the inactiveLinesCanvas
 
 // Persistent buffers
 let vertexBuffer: WebGLBuffer | null = null;
@@ -171,9 +175,11 @@ function setupCanvasClickHandling() {
       if (hoveredLineIds.size > 0) {
         hoveredLineIds.forEach((id) => selectedLineIds.add(id));
       }
-    } else {
+    } else if (drawState.wasDrawing === false) {
       // Regular click: clear selected
       selectedLineIds.clear();
+    } else {
+      drawState.wasDrawing = false;
     }
     redrawHoverOverlay();
   });
@@ -241,7 +247,7 @@ export async function initCanvasWebGL(dataset: any[], parcoords: any) {
 
   // initLineTextureWebGL(bgGlCanvas);
   // drawInactiveLinesTexture(dataset, parcoords);
-  redrawWebGLBackgroundLines(dataset, parcoords);  
+  redrawWebGLBackgroundLines(dataset, parcoords);
 
   await initHoverDetection(parcoords, onHoveredLinesChange);
   setupCanvasClickHandling();
@@ -250,27 +256,27 @@ export async function initCanvasWebGL(dataset: any[], parcoords: any) {
 }
 
 export function redrawWebGLBackgroundLines(dataset: any[], parcoords: any) {
-    if (!inactiveLinesCanvas) {
-        console.warn("Inactive background canvas not initialized");
-        return;
-    }
+  if (!inactiveLinesCanvas) {
+    console.warn("Inactive background canvas not initialized");
+    return;
+  }
 
-    const w = inactiveLinesCanvas.width;
-    const h = inactiveLinesCanvas.height;
+  const w = inactiveLinesCanvas.width;
+  const h = inactiveLinesCanvas.height;
 
-    // Create the offscreen WebGL canvas once
-    if (!bgGlCanvas) {
-        bgGlCanvas = document.createElement("canvas");
-        bgGlCanvas.width = w;
-        bgGlCanvas.height = h;
-    }
+  // Create the offscreen WebGL canvas once
+  if (!bgGlCanvas) {
+    bgGlCanvas = document.createElement("canvas");
+    bgGlCanvas.width = w;
+    bgGlCanvas.height = h;
+  }
 
-    // Initialize WebGL and draw the inactive lines
-    initLineTextureWebGL(bgGlCanvas);
-    drawInactiveLinesTexture(dataset, parcoords);
+  // Initialize WebGL and draw the inactive lines
+  initLineTextureWebGL(bgGlCanvas);
+  drawInactiveLinesTexture(dataset, parcoords);
 
-    // Rasterize result into the 2D background canvas
-    rasterizeInactiveLinesToCanvas(inactiveLinesCanvas);
+  // Rasterize result into the 2D background canvas
+  rasterizeInactiveLinesToCanvas(inactiveLinesCanvas);
 }
 
 // Convert dataset row to polyline points
@@ -317,7 +323,7 @@ function redrawHoverOverlay() {
     if (pts.length < 2) continue;
 
     // Red for hovered, yellow for selected
-    const color = isSelected ? [1, 1, 0, 0.8] : [1, 0, 0, 0.8];
+    const color = isSelected ? [1, 0.502, 0, 0.98] : [1, 0, 0, 0.8];
 
     // Convert polyline to line segments for LINES
     for (let i = 0; i < pts.length - 1; i++) {
