@@ -1,6 +1,11 @@
 import { getLineNameCanvas } from "./brush";
 import { canvasEl, lineState } from "./globals";
 import { initHoverDetection, SelectionMode } from "./hover/hover";
+import {
+  clearDataPointLabels,
+  createLabelsContainer,
+  showDataPointLabels,
+} from "./labelUtils";
 import * as PIXI from "pixi.js-legacy";
 
 let renderer: PIXI.CanvasRenderer | null = null;
@@ -25,6 +30,14 @@ function onHoveredLinesChange(
         hoveredLineIds.add(id);
       }
     });
+    if (hoveredIds.length > 0) {
+      const data = dataset.find((d) => getLineNameCanvas(d) === hoveredIds[0]);
+      if (data) {
+        showDataPointLabels(parcoords, data);
+      }
+    } else {
+      clearDataPointLabels();
+    }
   } else {
     selectedLineIds.clear();
     hoveredIds.forEach((id) => {
@@ -110,12 +123,15 @@ export async function initPixiCanvas2D(dpr: number, datasetArg: any[], parcoords
   linesContainer = new PIXI.Container();
   stage.addChild(linesContainer);
 
+  createLabelsContainer();
+
   await initHoverDetection(parcoords, onHoveredLinesChange);
 
   return renderer;
 }
 
 export function destroyPixiRenderer() {
+  clearDataPointLabels();
   if (renderer) {
     renderer.destroy();
     renderer = null;
