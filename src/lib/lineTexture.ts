@@ -161,7 +161,7 @@ export function drawInactiveLinesTexture(dataset: any[], parcoords: any) {
     const pts = getPolylinePoints(d, parcoords, dpr);
     if (pts.length < 2) continue;
 
-    const color = [0.5, 0.75, 0.84, 1]; // blue for inactive
+    const color = [235 / 255, 235 / 255, 235 / 255, 1]; // gray for inactive
 
     for (let i = 0; i < pts.length - 1; i++) {
       vertices.push(pts[i][0], pts[i][1]);
