@@ -10,11 +10,11 @@ This project is a fork of the original [SPCD3 teaching repository](https://githu
 
 Our fork adapts and extends the original material for the [Information Architecture and Web Usability](https://courses.isds.tugraz.at/iaweb/) course with a focus on WebGPU/WebGL comparisons, performance exploration, and interactive data visualisation techniques.
 
-# Project goals
+## Project goals
 - Provide a clear overview of Canvas 2D, SVG, WebGL, and WebGPU technologies.
 - Compare these technologies in terms of usability, performance and modern GPU capabilities.
   
-# Deployed version of the project 🌐
+## Deployed version of the project 🌐
 You can access the deployed version of the project at [https://filip-ljubotina.github.io/BenchLines/](https://filip-ljubotina.github.io/BenchLines/).
 
 
