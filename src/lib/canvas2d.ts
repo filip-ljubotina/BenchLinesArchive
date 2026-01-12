@@ -119,8 +119,8 @@ function redrawHoverOverlay() {
 
     overlayCtx.lineWidth = 2;
     overlayCtx.strokeStyle = isSelected
-      ? "rgba(255, 128, 0, 0.98)"
-      : "rgba(255, 0, 0, 0.8)"; // Red for hovered
+      ? "rgba(255, 128, 0, 1.0)"
+      : "rgba(255, 51, 51, 1.0)"; // Red for hovered
 
     overlayCtx.stroke();
   }
@@ -148,8 +148,8 @@ export function redrawCanvasLines(newDataset: any, parcoords: any) {
 
     ctx.lineWidth = 2;
     ctx.strokeStyle = active
-      ? "rgba(0,129,175,0.5)" // active
-      : "rgba(211,211,211,0.4)"; // inactive (faded)
+      ? "rgba(128, 191, 214, 1.0)" // active
+      : "rgba(235, 235, 235, 1.0)"; // inactive (faded)
 
     ctx.stroke();
   }
