@@ -3,14 +3,13 @@
     "module": "esnext",
     "esModuleInterop": true,
     "target": "es2022",
+    "lib": ["es2022", "dom"],
     "sourceMap": true,
     "outDir": "dist",
     "pretty": true,
     "downlevelIteration": true,
-    "declaration": true,
-    "declarationDir": "types",
     "moduleResolution": "node",
-    "types": ["@webgpu/types"],
+    "types": ["@webgpu/types", "node"],
     "paths": {
       "three/webgpu": ["./node_modules/three/build/three.webgpu.js"]
     }

@@ -1,12 +1,22 @@
 import { canvasEl, drawState, lineState, parcoords } from "./globals";
 import { getLineNameCanvas } from "./brush";
 import { initHoverDetection, SelectionMode } from "./hover/hover";
+import {
+  clearDataPointLabels,
+  createLabelsContainer,
+  showDataPointLabels,
+} from "./labelUtils";
 // the backgrounds are generated using webgl
 import {
   initLineTextureWebGL,
   drawInactiveLinesTexture,
   rasterizeInactiveLinesToCanvas,
 } from "./lineTexture";
+
+const ACTIVE_LINE_WIDTH = 3;
+const INACTIVE_LINE_WIDTH = 2;
+const HOVER_LINE_WIDTH = 4;
+const SELECTED_LINE_WIDTH = 4;
 
 let device: GPUDevice;
 let pipeline: GPURenderPipeline;
@@ -24,6 +34,7 @@ let overlayContext: GPUCanvasContext;
 let hoveredLineIds: Set<string> = new Set();
 let selectedLineIds: Set<string> = new Set();
 let dataset: any[] = [];
+let currentParcoords: any = null;
 
 // background image
 let inactiveLinesCanvas: HTMLCanvasElement;
@@ -71,6 +82,14 @@ function onHoveredLinesChange(
         hoveredLineIds.add(id);
       }
     });
+    if (hoveredIds.length > 0) {
+      const data = dataset.find((d) => getLineNameCanvas(d) === hoveredIds[0]);
+      if (data) {
+        showDataPointLabels(currentParcoords, data);
+      }
+    } else {
+      clearDataPointLabels();
+    }
   } else {
     selectedLineIds.clear();
     // hoveredIds.forEach((id) => selectedLineIds.add(id));
@@ -115,7 +134,7 @@ function redrawHoverOverlay() {
       if (pts.length >= 2) {
         const isSelected = selectedLineIds.has(id);
         hoveredLines.push({ pts, isSelected });
-        totalVertexCount += pts.length;
+        totalVertexCount += (pts.length - 1) * 6;
       }
     }
   }
@@ -131,15 +150,36 @@ function redrawHoverOverlay() {
   const allVerts = new Float32Array(totalVertexCount * 2);
   let currentOffset = 0;
 
-  for (const line of hoveredLines) {
-    for (const pt of line.pts) {
-      const x = pt[0];
-      const y = pt[1];
-      const xClip = (x / canvasWidth) * 2 - 1;
-      const yClip = 1 - (y / canvasHeight) * 2;
+  function addVertex(x: number, y: number) {
+    const xClip = (x / canvasWidth) * 2 - 1;
+    const yClip = 1 - (y / canvasHeight) * 2;
+    allVerts[currentOffset++] = xClip;
+    allVerts[currentOffset++] = yClip;
+  }
 
-      allVerts[currentOffset++] = xClip;
-      allVerts[currentOffset++] = yClip;
+  for (const line of hoveredLines) {
+    const width = HOVER_LINE_WIDTH; // Both hover and selected use 4
+    for (let i = 0; i < line.pts.length - 1; i++) {
+      const p1 = line.pts[i];
+      const p2 = line.pts[i + 1];
+      const x1 = p1[0], y1 = p1[1];
+      const x2 = p2[0], y2 = p2[1];
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      if (length === 0) continue;
+      const perpX = -dy / length * (width / 2);
+      const perpY = dx / length * (width / 2);
+
+      // Triangle 1
+      addVertex(x1 + perpX, y1 + perpY);
+      addVertex(x1 - perpX, y1 - perpY);
+      addVertex(x2 + perpX, y2 + perpY);
+
+      // Triangle 2
+      addVertex(x1 - perpX, y1 - perpY);
+      addVertex(x2 - perpX, y2 - perpY);
+      addVertex(x2 + perpX, y2 + perpY);
     }
   }
 
@@ -156,7 +196,7 @@ function redrawHoverOverlay() {
 
   let vertexOffset = 0;
   for (const line of hoveredLines) {
-    const lineVertexCount = line.pts.length;
+    const lineVertexCount = (line.pts.length - 1) * 6;
     const bindGroup = line.isSelected ? selectedBindGroup : hoverBindGroup;
     pass.setBindGroup(0, bindGroup);
     pass.draw(lineVertexCount, 1, vertexOffset, 0);
@@ -384,8 +424,8 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
       ],
     },
     primitive: {
-      // We are drawing lines
-      topology: "line-strip",
+      // We are drawing triangles
+      topology: "triangle-list",
 
       // For pipelines with strip topologies ("line-strip" or "triangle-strip"), this determines the
       // index buffer format and primitive restart value ("uint16"/0xFFFF or "uint32"/0xFFFFFFFF).
@@ -402,7 +442,7 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
   device.queue.writeBuffer(
     activeColorBuffer,
     0,
-    new Float32Array([0.0, 129.0 / 255.0, 175.0 / 255.0, 0.5])
+    new Float32Array([128.0 / 255.0, 191.0 / 255.0, 214.0 / 255.0, 1.0])
   );
 
   const inactiveColorBuffer = device.createBuffer({
@@ -412,7 +452,7 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
   device.queue.writeBuffer(
     inactiveColorBuffer,
     0,
-    new Float32Array([211.0 / 255.0, 211.0 / 255.0, 211.0 / 255.0, 0.4])
+    new Float32Array([235.0 / 255.0, 235.0 / 255.0, 235.0 / 255.0, 1.0])
   );
 
   // Create hover color buffer (red)
@@ -423,10 +463,10 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
   device.queue.writeBuffer(
     hoverColorBuffer,
     0,
-    new Float32Array([1.0, 0.0, 0.0, 0.8]) // Red with alpha 0.8
+    new Float32Array([1.0, 51.0 / 255.0, 51.0 / 255.0, 1.0]) // Red with alpha 1.0
   );
 
-  // Create selected color buffer (yellow)
+  // Create selected color buffer (orange)
   const selectedColorBuffer = device.createBuffer({
     size: 16,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -434,7 +474,7 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
   device.queue.writeBuffer(
     selectedColorBuffer,
     0,
-    new Float32Array([1.0, 0.502, 0.0, 0.98]) // Yellow with alpha 0.8
+    new Float32Array([1.0, 128.0 / 255.0, 0.0, 1.0]) // Orange with alpha 1.0
   );
 
   // Create bind groups for each color
@@ -457,6 +497,8 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
     layout: bindGroupLayout,
     entries: [{ binding: 0, resource: { buffer: selectedColorBuffer } }],
   });
+
+  createLabelsContainer();
 
   // Create command encoder to encode GPU commands
   encoder = device.createCommandEncoder();
@@ -531,6 +573,7 @@ export async function initCanvasWebGPU(dataset: any[], parcoords: any) {
 export function redrawWebGPULines(newDataset: any[], parcoords: any) {
   // Store the dataset for hover overlay use
   dataset = newDataset;
+  currentParcoords = parcoords;
 
   if (!device) {
     throw new Error(
@@ -565,7 +608,8 @@ export function redrawWebGPULines(newDataset: any[], parcoords: any) {
 
     if (pts.length >= 2) {
       allLines.push({ pts, active });
-      totalVertexCount += pts.length;
+      // Each segment has 6 vertices (2 triangles)
+      totalVertexCount += (pts.length - 1) * 6;
     }
   }
 
@@ -581,16 +625,36 @@ export function redrawWebGPULines(newDataset: any[], parcoords: any) {
   const allVerts = new Float32Array(totalVertexCount * 2);
   let currentOffset = 0;
 
-  for (const line of allLines) {
-    for (const pt of line.pts) {
-      const x = pt[0];
-      const y = pt[1];
-      const xClip = (x / canvasWidth) * 2 - 1;
-      const yClip = 1 - (y / canvasHeight) * 2;
+  function addVertex(x: number, y: number) {
+    const xClip = (x / canvasWidth) * 2 - 1;
+    const yClip = 1 - (y / canvasHeight) * 2;
+    allVerts[currentOffset++] = xClip;
+    allVerts[currentOffset++] = yClip;
+  }
 
-      // Store x and y in the large array
-      allVerts[currentOffset++] = xClip;
-      allVerts[currentOffset++] = yClip;
+  for (const line of allLines) {
+    const width = line.active ? ACTIVE_LINE_WIDTH : INACTIVE_LINE_WIDTH;
+    for (let i = 0; i < line.pts.length - 1; i++) {
+      const p1 = line.pts[i];
+      const p2 = line.pts[i + 1];
+      const x1 = p1[0], y1 = p1[1];
+      const x2 = p2[0], y2 = p2[1];
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      if (length === 0) continue;
+      const perpX = -dy / length * (width / 2);
+      const perpY = dx / length * (width / 2);
+
+      // Triangle 1
+      addVertex(x1 + perpX, y1 + perpY);
+      addVertex(x1 - perpX, y1 - perpY);
+      addVertex(x2 + perpX, y2 + perpY);
+
+      // Triangle 2
+      addVertex(x1 - perpX, y1 - perpY);
+      addVertex(x2 - perpX, y2 - perpY);
+      addVertex(x2 + perpX, y2 + perpY);
     }
   }
 
@@ -610,7 +674,7 @@ export function redrawWebGPULines(newDataset: any[], parcoords: any) {
 
   let vertexOffset = 0;
   for (const line of allLines) {
-    const lineVertexCount = line.pts.length;
+    const lineVertexCount = (line.pts.length - 1) * 6;
 
     // Set the appropriate color (Bind Group) for this line
     pass.setBindGroup(0, line.active ? activeBindGroup : inactiveBindGroup);
@@ -633,4 +697,12 @@ export function redrawWebGPULines(newDataset: any[], parcoords: any) {
 
 export function getSelectedIds(): Set<string> {
   return selectedLineIds;
+}
+
+export function disposeWebGPU() {
+  clearDataPointLabels();
+  hoveredLineIds.clear();
+  selectedLineIds.clear();
+  dataset = [];
+  currentParcoords = null;
 }

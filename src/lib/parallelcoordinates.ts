@@ -572,7 +572,7 @@ export async function setupTechnology(
       break;
     case "Canvas2DPixi":
       recreateCanvas();
-      initPixiCanvas2D(dpr);
+      await initPixiCanvas2D(dpr, dataset, parcoords);
       break;
     case "SVG-DOM":
       svg
@@ -590,11 +590,11 @@ export async function setupTechnology(
       break;
     case "WebGLThree":
       recreateCanvas();
-      initCanvasWebGLThreeJS(dataset, parcoords);
+      await initCanvasWebGLThreeJS(dataset, parcoords);
       break;
     case "WebGLPixi":
       recreateCanvas();
-      initCanvasWebGLPixiJS();
+      await initCanvasWebGLPixiJS();
       break;
     case "WebGPU":
       recreateCanvas();
@@ -724,7 +724,7 @@ export function drawChart(content: any[]): void {
       updateLineDataBuffer(parcoords.newDataset, parcoords);
       break;
     case "Canvas2DPixi":
-      initPixiCanvas2D(dpr);
+      initPixiCanvas2D(dpr, parcoords.newDataset, parcoords);
       redrawPixiCanvasLines(parcoords.newDataset, parcoords);
       break;
     case "SVG-DOM":
@@ -746,12 +746,18 @@ export function drawChart(content: any[]): void {
       updateLineDataBuffer(parcoords.newDataset, parcoords);
       break;
     case "WebGLThree":
-      initCanvasWebGLThreeJS(parcoords.newDataset, parcoords);
-      redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
+      initCanvasWebGLThreeJS(parcoords.newDataset, parcoords)
+        .then(() => {
+          redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
+        })
+        .catch((err) => console.error("WebGLThree init failed:", err));
       break;
     case "WebGLPixi":
-      initCanvasWebGLPixiJS();
-      redrawWebGLLinesPixiJS(parcoords.newDataset, parcoords);
+      initCanvasWebGLPixiJS()
+        .then(() => {
+          redrawWebGLLinesPixiJS(parcoords.newDataset, parcoords);
+        })
+        .catch((err) => console.error("WebGLPixi init failed:", err));
       break;
     case "WebGPU":
       initCanvasWebGPU(parcoords.newDataset, parcoords)

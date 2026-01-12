@@ -86,6 +86,8 @@ export function initLineTextureWebGL(canvas: HTMLCanvasElement) {
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   vertexBuffer = gl.createBuffer();
   colorBuffer = gl.createBuffer();
@@ -159,7 +161,7 @@ export function drawInactiveLinesTexture(dataset: any[], parcoords: any) {
     const pts = getPolylinePoints(d, parcoords, dpr);
     if (pts.length < 2) continue;
 
-    const color = [0.8, 0.8, 0.8, 1]; // gray for inactive
+    const color = [235 / 255, 235 / 255, 235 / 255, 1]; // gray for inactive
 
     for (let i = 0; i < pts.length - 1; i++) {
       vertices.push(pts[i][0], pts[i][1]);
@@ -183,5 +185,6 @@ export function drawInactiveLinesTexture(dataset: any[], parcoords: any) {
   gl.vertexAttribPointer(gl.getAttribLocation(program, "a_color"), 4, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(gl.getAttribLocation(program, "a_color"));
 
+  gl.lineWidth(2);
   gl.drawArrays(gl.LINES, 0, vertexData.length / 2);
 }
