@@ -572,7 +572,7 @@ export async function setupTechnology(
       break;
     case "Canvas2DPixi":
       recreateCanvas();
-      initPixiCanvas2D(dpr);
+      await initPixiCanvas2D(dpr, dataset, parcoords);
       break;
     case "SVG-DOM":
       svg
@@ -724,7 +724,7 @@ export function drawChart(content: any[]): void {
       updateLineDataBuffer(parcoords.newDataset, parcoords);
       break;
     case "Canvas2DPixi":
-      initPixiCanvas2D(dpr);
+      initPixiCanvas2D(dpr, parcoords.newDataset, parcoords);
       redrawPixiCanvasLines(parcoords.newDataset, parcoords);
       break;
     case "SVG-DOM":
