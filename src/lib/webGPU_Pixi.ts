@@ -29,25 +29,25 @@ interface LineStyle {
 
 const activeStyle: LineStyle = {
   color: 0x80bfd6,
-  width: 3,
+  width: 2,
   alpha: 1,
   zIndex: 0,
 };
 const inactiveStyle: LineStyle = {
   color: 0xebebeb,
-  width: 2,
+  width: 1,
   alpha: 1,
   zIndex: 0,
 };
 const hoverStyle: LineStyle = {
   color: 0xff3333,
-  width: 4,
+  width: 3,
   alpha: 1,
   zIndex: 1,
 };
 const selectedStyle: LineStyle = {
   color: 0xff8000, // orange
-  width: 4,
+  width: 3,
   alpha: 1,
   zIndex: 2,
 };
