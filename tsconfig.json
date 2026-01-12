@@ -9,7 +9,7 @@
     "pretty": true,
     "downlevelIteration": true,
     "moduleResolution": "node",
-    "types": ["@webgpu/types"],
+    "types": ["@webgpu/types", "node"],
     "paths": {
       "three/webgpu": ["./node_modules/three/build/three.webgpu.js"]
     }
