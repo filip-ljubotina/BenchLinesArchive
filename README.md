@@ -142,13 +142,13 @@ more information.
 
 ## Contributors
 
-- Keith Andrews [kandrews@iicm.edu](mailto:kandrews@iicm.edu?subject=Rslidy)  
-  Project Leader
+- Michael Anderson [michael.anderson@student.tugraz.at](mailto:michael.anderson@student.tugraz.at?subject=BenchLines)  
+  PhD Student
 
-- Romana Gruber  
-  Master's Thesis, main developer
+- Jyothish Atheendran [jyothish.atheendran@student.tugraz.at](mailto:jyothish.atheendran@student.tugraz.at?subject=BenchLines)  
+  MSc Student
 
-- Philipp Drescher, Jeremias Kleinschuster, Sebastian Schreiner, Burim Vrella  
-  InfoVis SS 2023 G1
+- Filip Ljubotina [filip.ljubotina@student.tugraz.at](mailto:filip.ljubotina@student.tugraz.at?subject=BenchLines)  
+  Student
 
 
