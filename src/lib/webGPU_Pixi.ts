@@ -48,7 +48,7 @@ const hoverStyle: LineStyle = {
 const selectedStyle: LineStyle = {
   color: 0xff8000, // orange
   width: 4,
-  alpha: 0.98,
+  alpha: 1,
   zIndex: 2,
 };
 

@@ -428,7 +428,7 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
   device.queue.writeBuffer(
     activeColorBuffer,
     0,
-    new Float32Array([0.0, 129.0 / 255.0, 175.0 / 255.0, 0.5])
+    new Float32Array([128.0 / 255.0, 191.0 / 255.0, 214.0 / 255.0, 1.0])
   );
 
   const inactiveColorBuffer = device.createBuffer({
@@ -438,7 +438,7 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
   device.queue.writeBuffer(
     inactiveColorBuffer,
     0,
-    new Float32Array([211.0 / 255.0, 211.0 / 255.0, 211.0 / 255.0, 0.4])
+    new Float32Array([235.0 / 255.0, 235.0 / 255.0, 235.0 / 255.0, 1.0])
   );
 
   // Create hover color buffer (red)
@@ -449,10 +449,10 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
   device.queue.writeBuffer(
     hoverColorBuffer,
     0,
-    new Float32Array([1.0, 0.0, 0.0, 0.8]) // Red with alpha 0.8
+    new Float32Array([1.0, 51.0 / 255.0, 51.0 / 255.0, 1.0]) // Red with alpha 1.0
   );
 
-  // Create selected color buffer (yellow)
+  // Create selected color buffer (orange)
   const selectedColorBuffer = device.createBuffer({
     size: 16,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -460,7 +460,7 @@ export async function initWebGPU(dataset: any[], parcoords: any) {
   device.queue.writeBuffer(
     selectedColorBuffer,
     0,
-    new Float32Array([1.0, 0.502, 0.0, 0.98]) // Yellow with alpha 0.8
+    new Float32Array([1.0, 128.0 / 255.0, 0.0, 1.0]) // Orange with alpha 1.0
   );
 
   // Create bind groups for each color
