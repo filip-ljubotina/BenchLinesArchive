@@ -183,5 +183,6 @@ export function drawInactiveLinesTexture(dataset: any[], parcoords: any) {
   gl.vertexAttribPointer(gl.getAttribLocation(program, "a_color"), 4, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(gl.getAttribLocation(program, "a_color"));
 
+  gl.lineWidth(2);
   gl.drawArrays(gl.LINES, 0, vertexData.length / 2);
 }

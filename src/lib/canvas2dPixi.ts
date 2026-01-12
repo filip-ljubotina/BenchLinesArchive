@@ -38,8 +38,10 @@ export function redrawPixiCanvasLines(dataset: any[], parcoords: any) {
 
     const color = active ? 0x0081af : 0xd3d3d3;
     const alpha = active ? 0.5 : 0.4;
+    
 
-    graphics.lineStyle(2, color, alpha);
+    graphics.lineStyle(2, color, 1.0);
+    graphics.alpha = 0.5;
 
     graphics.moveTo(pts[0][0], pts[0][1]);
     for (let i = 1; i < pts.length; i++) {
