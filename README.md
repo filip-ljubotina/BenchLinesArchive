@@ -1,51 +1,26 @@
-This project is a fork of the original SPCD3 teaching repository created by the Institute of Human-Centred Computing at TU Graz:
-🔗 https://github.com/tugraz-isds/spcd3
-Our fork adapts and extends the original material for the IAWU course with a focus on WebGPU/WebGL comparisons, performance exploration, and interactive data visualisation techniques.
+# BenchLines
+
+BenchLines is an open-source JavaScript library which implements a steerable parallel coordinates visualisation. The visualisation has built-in interactive controls as well as an API which allows the visualisation to be controlle (steered) externally. 
+
+<!-- The library is written in TypeScript and is based on [D3](https://d3js.org/). -->
+
+![screenshot](ss.png)
+
+This project is a fork of the original [SPCD3 teaching repository](https://github.com/tugraz-isds/spcd3) created by the Institute of Human-Centred Computing at TU Graz.
+
+Our fork adapts and extends the original material for the [Information Architecture and Web Usability](https://courses.isds.tugraz.at/iaweb/) course with a focus on WebGPU/WebGL comparisons, performance exploration, and interactive data visualisation techniques.
 
 # Project goals
 - Provide a clear overview of Canvas 2D, SVG, WebGL, and WebGPU technologies.
 - Compare these technologies in terms of usability, performance and modern GPU capabilities.
   
-# Deployed version of the project
-Here you can access the deployed version of the project: https://filip-ljubotina.github.io/BenchLines/
+# Deployed version of the project 🌐
+You can access the deployed version of the project at [https://filip-ljubotina.github.io/BenchLines/](https://filip-ljubotina.github.io/BenchLines/).
 
-
-# Steerable Parallel Coordinates in D3 (SPCD3)
-
-SPCD3 is an open-source JavaScript library which implements a
-steerable parallel coordinates visualisation. The visualisation has
-built-in interactive controls as well as an API which allows the
-visualisation to be controlled (steered) externally. The library is
-written in TypeScript and is based on [D3](https://d3js.org/).
-
-In addition, a simple example program is provided to illustrate how to
-use the library and its steerable API. A live version of the latest
-deployment can be found at
-[https://tugraz-isds.github.io/spcd3](https://tugraz-isds.github.io/spcd3).
-
-![screenshot](exampleSpcD3.png)
-
-## Dependencies
-
-The SPCD3 library uses the following D3v7 modules:
-- d3-dsv
-- d3-selection
-- d3-drag
-- d3-shape
-- d3-axis
-- d3-scale
-- d3-transition
-
-In addition to D3, the following JavaScript libraries are used:
- - [Mini SVG data: URI](https://github.com/tigt/mini-svg-data-uri#readme):
-   To convert SVGs into data URIs.
- - [xml-formatter](https://github.com/chrisbottin/xml-formatter#readme):
-   To prettify the SVG file of the parallel coordinate plot for download.
 
 The task runner [Gulp](https://gulpjs.com/) is used to automate
 repeatable tasks and [Rollup](https://rollupjs.org/)
 is used to bundle and build the library.
-
 
 
 ## Getting Started
@@ -111,10 +86,10 @@ As mentioned in the beginning, an example was implemented to show how
 the library works and what the parallel coordinate plot will look like
 in addition to the library.
 
-The [API Guide](./API.md) lists all available functions in SPCD3's
+The [API Guide](./API.md) lists all available functions in BenchLines'
 API.
 
-An example application was built to illustrate the use of the SPCD3
+An example application was built to illustrate the use of the BenchLines
 library. It is described in the [Example Application
 Guide](./EXAMPLE.md).
 
@@ -134,7 +109,7 @@ structure.
 
 ## License
 
-SPCD3 is distributed under the MIT License. See [LICENSE](LICENSE) for
+This project is distributed under the MIT License. See [LICENSE](LICENSE) for
 more information.
 
 
