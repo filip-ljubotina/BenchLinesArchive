@@ -7,6 +7,11 @@ import {
   parcoords,
 } from "./globals";
 import { initHoverDetection, SelectionMode } from "./hover/hover";
+import {
+  clearDataPointLabels,
+  createLabelsContainer,
+  showDataPointLabels,
+} from "./labelUtils";
 // the backgrounds are generated using webgl
 import {
   initLineTextureWebGL,
@@ -25,6 +30,7 @@ let bgGlCanvas: HTMLCanvasElement | null = null; // persistent canvas (offscreen
 let hoveredLineIds: Set<string> = new Set();
 let selectedLineIds: Set<string> = new Set();
 let dataset: any[] = [];
+let currentParcoords: any = null;
 
 function getPolylinePoints(d: any, parcoords: any): [number, number][] {
   const pts: [number, number][] = [];
@@ -66,6 +72,14 @@ function onHoveredLinesChange(
         hoveredLineIds.add(id);
       }
     });
+    if (hoveredIds.length > 0) {
+      const data = dataset.find((d) => getLineNameCanvas(d) === hoveredIds[0]);
+      if (data) {
+        showDataPointLabels(currentParcoords, data);
+      }
+    } else {
+      clearDataPointLabels();
+    }
   } else {
     selectedLineIds.clear();
     // hoveredIds.forEach((id) => selectedLineIds.add(id));
@@ -127,10 +141,11 @@ function redrawHoverOverlay() {
 }
 
 export function redrawCanvasLines(newDataset: any, parcoords: any) {
-  if (!ctx || !canvasEl || !newDataset) return;
-
   // Store dataset for overlay use
   dataset = newDataset;
+  currentParcoords = parcoords;
+
+  if (!ctx || !canvasEl || !newDataset) return;
 
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
@@ -163,6 +178,7 @@ export async function initCanvas2D(
   dataset: any[],
   parcoords: any
 ) {
+  currentParcoords = parcoords;
   ctx = canvasEl.getContext("2d")!;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // 2D only
 
@@ -185,6 +201,8 @@ export async function initCanvas2D(
   // Insert behind the main canvas
   canvasEl.parentNode?.insertBefore(inactiveLinesCanvas, canvasEl);
   redrawCanvas2DBackgroundLines(dataset, parcoords);
+
+  createLabelsContainer();
 
   await initHoverDetection(parcoords, onHoveredLinesChange);
   setupCanvasClickHandling();
