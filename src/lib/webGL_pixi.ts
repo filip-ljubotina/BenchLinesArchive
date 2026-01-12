@@ -35,7 +35,7 @@ const activeStyle: LineStyle = {
   zIndex: 0,
 };
 const inactiveStyle: LineStyle = {
-  color: 0xebebeb,
+  color: 0x80bfd6,
   width: 2,
   alpha: 1,
   zIndex: 0,
