@@ -87,7 +87,7 @@ export async function initCanvasWebGLThreeJS(dataset: any[], parcoords: any) {
 
   lineGeometry = new LineSegmentsGeometry();
   lineMaterial = new LineMaterial({
-    color: 0xffffff,
+    color: 0x80bfd6,
     linewidth: 2,
     vertexColors: true,
   });
@@ -116,6 +116,9 @@ export function redrawWebGLLinesThreeJS(newDataset: any[], parcoords: any) {
 
   let totalSegments = 0;
   for (const d of dataset) {
+    const id = getLineNameCanvas(d);
+    const active = lineState[id]?.active ?? true;
+    if (!active) continue;
     const n = parcoords.newFeatures.length;
     if (n >= 2) totalSegments += n - 1;
   }
@@ -127,6 +130,7 @@ export function redrawWebGLLinesThreeJS(newDataset: any[], parcoords: any) {
   for (const d of dataset) {
     const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
+    if (!active) continue; // skip inactive lines like webGL.ts
     const isHovered = hoveredLineIds.has(id);
     const isSelected = selectedLineIds.has(id);
 
@@ -136,7 +140,7 @@ export function redrawWebGLLinesThreeJS(newDataset: any[], parcoords: any) {
     } else if (isHovered) {
       color = [1, 0, 0]; // Red for hovered
     } else {
-      color = active ? [0.5, 0.75, 0.84] : [0.92, 0.92, 0.92]; // Blue for active, gray for inactive
+      color = [0.5, 0.75, 0.84]; // Blue for active
     }
 
     // Compute polyline points
