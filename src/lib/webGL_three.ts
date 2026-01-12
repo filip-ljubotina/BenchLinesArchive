@@ -3,7 +3,13 @@ import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import { getLineNameCanvas } from "./brush";
-import { canvasEl, lineState } from "./globals";
+import { canvasEl, drawState, lineState, parcoords } from "./globals";
+import { initHoverDetection, SelectionMode } from "./hover/hover";
+import {
+  clearDataPointLabels,
+  createLabelsContainer,
+  showDataPointLabels,
+} from "./labelUtils";
 
 let scene: THREE.Scene;
 let camera: THREE.OrthographicCamera;
@@ -12,7 +18,63 @@ let lines: Line2;
 let lineMaterial: LineMaterial;
 let lineGeometry: LineSegmentsGeometry;
 
-export function initCanvasWebGLThreeJS(dataset: any[], parcoords: any) {
+// Hover and selection state
+let hoveredLineIds: Set<string> = new Set();
+let selectedLineIds: Set<string> = new Set();
+let dataset: any[] = [];
+let currentParcoords: any = null;
+
+function onHoveredLinesChange(
+  hoveredIds: string[],
+  selectionMode: SelectionMode
+) {
+  if (selectionMode === "hover") {
+    hoveredLineIds.clear();
+    hoveredIds.forEach((id) => {
+      if (!lineState[id] || lineState[id].active) {
+        hoveredLineIds.add(id);
+      }
+    });
+    if (hoveredIds.length > 0) {
+      const data = dataset.find((d) => getLineNameCanvas(d) === hoveredIds[0]);
+      if (data) {
+        showDataPointLabels(currentParcoords, data);
+      }
+    } else {
+      clearDataPointLabels();
+    }
+  } else {
+    selectedLineIds.clear();
+    hoveredIds.forEach((id) => {
+      if (!lineState[id] || lineState[id].active) {
+        selectedLineIds.add(id);
+      }
+    });
+  }
+  redrawWebGLLinesThreeJS(dataset, currentParcoords);
+}
+
+function onCanvasClick(event: MouseEvent) {
+  if (event.shiftKey) {
+    // Shift + click: add hovered lines to selected
+    if (hoveredLineIds.size > 0) {
+      hoveredLineIds.forEach((id) => selectedLineIds.add(id));
+    }
+  } else if (drawState.wasDrawing === false) {
+    // Regular click: clear selected
+    selectedLineIds.clear();
+  } else {
+    drawState.wasDrawing = false;
+  }
+  redrawWebGLLinesThreeJS(dataset, currentParcoords);
+}
+
+function setupCanvasClickHandling() {
+  const plotArea = document.getElementById("plotArea") as HTMLDivElement;
+  plotArea.addEventListener("click", onCanvasClick);
+}
+
+export async function initCanvasWebGLThreeJS(dataset: any[], parcoords: any) {
   const width = canvasEl.clientWidth;
   const height = canvasEl.clientHeight;
 
@@ -34,11 +96,21 @@ export function initCanvasWebGLThreeJS(dataset: any[], parcoords: any) {
   lines = new Line2(lineGeometry, lineMaterial);
   scene.add(lines);
 
+  // Initialize hover detection and click handling
+  await initHoverDetection(parcoords, onHoveredLinesChange);
+  setupCanvasClickHandling();
+  createLabelsContainer();
+  currentParcoords = parcoords;
+
   return renderer;
 }
 
-export function redrawWebGLLinesThreeJS(dataset: any[], parcoords: any) {
+export function redrawWebGLLinesThreeJS(newDataset: any[], parcoords: any) {
   if (!renderer || !scene || !lines) return;
+
+  // Store dataset for hover use
+  dataset = newDataset;
+  currentParcoords = parcoords;
 
   const height = canvasEl.clientHeight;
 
@@ -55,7 +127,17 @@ export function redrawWebGLLinesThreeJS(dataset: any[], parcoords: any) {
   for (const d of dataset) {
     const id = getLineNameCanvas(d);
     const active = lineState[id]?.active ?? true;
-    const color = active ? [0.5, 0.75, 0.84] : [0.92, 0.92, 0.92];
+    const isHovered = hoveredLineIds.has(id);
+    const isSelected = selectedLineIds.has(id);
+
+    let color: [number, number, number];
+    if (isSelected) {
+      color = [1, 0.502, 0]; // Orange for selected
+    } else if (isHovered) {
+      color = [1, 0, 0]; // Red for hovered
+    } else {
+      color = active ? [0.5, 0.75, 0.84] : [0.92, 0.92, 0.92]; // Blue for active, gray for inactive
+    }
 
     // Compute polyline points
     const pts: [number, number, number][] = parcoords.newFeatures.map((name: string) => {
@@ -83,4 +165,18 @@ export function redrawWebGLLinesThreeJS(dataset: any[], parcoords: any) {
   lineMaterial.needsUpdate = true;
 
   renderer.render(scene, camera);
+}
+
+export function getSelectedIds(): Set<string> {
+  return selectedLineIds;
+}
+
+export function disposeWebGLThreeJS() {
+  const plotArea = document.getElementById("plotArea") as HTMLDivElement;
+  plotArea.removeEventListener("click", onCanvasClick);
+  clearDataPointLabels();
+  hoveredLineIds.clear();
+  selectedLineIds.clear();
+  dataset = [];
+  currentParcoords = null;
 }

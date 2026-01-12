@@ -590,7 +590,7 @@ export async function setupTechnology(
       break;
     case "WebGLThree":
       recreateCanvas();
-      initCanvasWebGLThreeJS(dataset, parcoords);
+      await initCanvasWebGLThreeJS(dataset, parcoords);
       break;
     case "WebGLPixi":
       recreateCanvas();
@@ -746,8 +746,11 @@ export function drawChart(content: any[]): void {
       updateLineDataBuffer(parcoords.newDataset, parcoords);
       break;
     case "WebGLThree":
-      initCanvasWebGLThreeJS(parcoords.newDataset, parcoords);
-      redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
+      initCanvasWebGLThreeJS(parcoords.newDataset, parcoords)
+        .then(() => {
+          redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
+        })
+        .catch((err) => console.error("WebGLThree init failed:", err));
       break;
     case "WebGLPixi":
       initCanvasWebGLPixiJS();
