@@ -608,21 +608,50 @@ export function generateDropDownForWebTech() {
 
   container.innerHTML = "";
 
-  // Label
   const label = document.createElement("span");
   label.textContent = "Technologies:";
   label.style.marginRight = "0.5rem";
 
-  // Dropdown
   const select = document.createElement("select");
 
-  getAllWebTechOptions().forEach((value) => {
+  const nativeOptions = ["SVG-DOM", "Canvas2D", "WebGL", "WebGPU"];
+  const pixiOptions = ["Pixi WebGL", "Pixi WebGPU"];
+  const threeOptions = ["Three WebGL", "Three WebGPU"];
+
+  const nativeGroup = document.createElement("optgroup");
+  nativeGroup.label = "Native";
+  nativeOptions.forEach((value) => {
     const option = document.createElement("option");
     option.value = value;
     option.textContent = value;
     if (value === getCurrentWebTechnologie()) option.selected = true;
-    select.appendChild(option);
+    nativeGroup.appendChild(option);
   });
+  select.appendChild(nativeGroup);
+
+  // Pixi.js group
+  const pixiGroup = document.createElement("optgroup");
+  pixiGroup.label = "Pixi.js";
+  pixiOptions.forEach((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    if (value === getCurrentWebTechnologie()) option.selected = true;
+    pixiGroup.appendChild(option);
+  });
+  select.appendChild(pixiGroup);
+
+  // Three.js group
+  const threeGroup = document.createElement("optgroup");
+  threeGroup.label = "Three.js";
+  threeOptions.forEach((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    if (value === getCurrentWebTechnologie()) option.selected = true;
+    threeGroup.appendChild(option);
+  });
+  select.appendChild(threeGroup);
 
   select.addEventListener("change", async (e) => {
     const value = e.target.value;

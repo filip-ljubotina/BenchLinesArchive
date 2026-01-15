@@ -13,7 +13,6 @@ import {
   redrawWebGLLines,
   redrawWebGLBackgroundLines,
 } from "./webGL";
-import { initPixiCanvas2D, redrawPixiCanvasLines } from "./canvas2dPixi";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
 import { initCanvasWebGLPixiJS, redrawWebGLLinesPixiJS } from "./webGL_pixi";
 import {
@@ -493,31 +492,28 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
     case "Canvas2D":
       redrawCanvasLines(dataset, parcoords);
       break;
-    case "Canvas2DPixi":
-      redrawPixiCanvasLines(parcoords.newDataset, parcoords);
-      break;
     case "SVG-DOM":
       redrawSvgLines(svg, dataset, parcoords);
       break;
     case "WebGL":
       redrawWebGLLines(dataset, parcoords);
       break;
-    case "WebGLThree":
+    case "Three WebGL":
       redrawWebGLLinesThreeJS(dataset, parcoords);
       break;
-    case "WebGLPixi":
+    case "Pixi WebGL":
       redrawWebGLLinesPixiJS(dataset, parcoords);
       break;
     case "WebGPU":
       redrawWebGPULines(dataset, parcoords);
       break;
-    case "WebGPU-Three":
+    case "Three WebGPU":
       redrawWebGPULinesThreeJS(dataset, parcoords);
       break;
     // case "WebGPU-Orillusion":
     //   redrawWebGPULinesOrillusion(dataset, parcoords);
     //   break;
-    case "WebGPU-Pixi":
+    case "Pixi WebGPU":
       redrawWebGPUPixiLines(dataset, parcoords);
       break;
   }
@@ -528,12 +524,6 @@ export function redrawBackgroundPolylines(dataset: any[], parcoords: any) {
     case "Canvas2D":
       redrawCanvas2DBackgroundLines(dataset, parcoords);
       break;
-    // case "Canvas2DPixi":
-    //   redrawPixiCanvasLines(parcoords.newDataset, parcoords);
-    //   break;
-    // case "SVG-DOM":
-    //   redrawSvgLines(svg, dataset, parcoords);
-    //   break;
     case "WebGL":
       redrawWebGLBackgroundLines(dataset, parcoords);
       break;
@@ -569,10 +559,6 @@ export async function setupTechnology(
     case "Canvas2D":
       recreateCanvas();
       initCanvas2D(dpr, dataset, parcoords);
-      break;
-    case "Canvas2DPixi":
-      recreateCanvas();
-      await initPixiCanvas2D(dpr, dataset, parcoords);
       break;
     case "SVG-DOM":
       svg
@@ -723,10 +709,6 @@ export function drawChart(content: any[]): void {
       redrawCanvasLines(parcoords.newDataset, parcoords);
       updateLineDataBuffer(parcoords.newDataset, parcoords);
       break;
-    case "Canvas2DPixi":
-      initPixiCanvas2D(dpr, parcoords.newDataset, parcoords);
-      redrawPixiCanvasLines(parcoords.newDataset, parcoords);
-      break;
     case "SVG-DOM":
       // The setActivePathLines function call is causing interactivity in SVG mode
       setActive(setActivePathLines(svg, content, parcoords));
@@ -745,14 +727,14 @@ export function drawChart(content: any[]): void {
       redrawWebGLLines(parcoords.newDataset, parcoords);
       updateLineDataBuffer(parcoords.newDataset, parcoords);
       break;
-    case "WebGLThree":
+    case "Three WebGL":
       initCanvasWebGLThreeJS(parcoords.newDataset, parcoords)
         .then(() => {
           redrawWebGLLinesThreeJS(parcoords.newDataset, parcoords);
         })
         .catch((err) => console.error("WebGLThree init failed:", err));
       break;
-    case "WebGLPixi":
+    case "Pixi WebGL":
       initCanvasWebGLPixiJS()
         .then(() => {
           redrawWebGLLinesPixiJS(parcoords.newDataset, parcoords);
@@ -768,14 +750,14 @@ export function drawChart(content: any[]): void {
         })
         .catch((err) => console.error("WebGPU init failed:", err));
       break;
-    case "WebGPU-Three":
+    case "Three WebGPU":
       initCanvasWebGPUThreeJS()
         .then(() => {
           redrawWebGPULinesThreeJS(parcoords.newDataset, parcoords);
         })
         .catch((err) => console.error("WebGPU-Three init failed:", err));
       break;
-    case "WebGPU-Pixi":
+    case "Pixi WebGPU":
       initCanvasWebGPUPixi()
         .then(() => {
           redrawWebGPUPixiLines(parcoords.newDataset, parcoords);

@@ -209,16 +209,14 @@ export function setCurrentDataset(newDataset: DatasetName) {
 
 export function getAllWebTechOptions(): GraphicsWebTech[] {
   return [
-    "Canvas2D",
-    "Canvas2DPixi",
     "SVG-DOM",
+    "Canvas2D",
     "WebGL",
-    "WebGLThree",
-    "WebGLPixi",
     "WebGPU",
-    "WebGPU-Three",
-    "WebGPU-Pixi",
-    // "WebGPU-Orillusion",
+    "Pixi WebGL",
+    "Pixi WebGPU",
+    "Three WebGL",
+    "Three WebGPU",
   ];
 }
 
