@@ -1,5 +1,5 @@
 import { getLineNameCanvas } from "../brush";
-import { activeTool, drawState, resetDrawState } from "../globals";
+import { activeTool, drawState, hoverTech, resetDrawState } from "../globals";
 import { clearSvgDraw, startSvgDraw, updateSvgDraw } from "../selection";
 import {
   SelectionMode,
@@ -32,7 +32,7 @@ const config: HoverDetectionConfig = { ...DEFAULT_CONFIG };
 
 function createBackend(): IHoverDetectionBackend {
   const gpuBackend = new GPUHoverBackend();
-  if (gpuBackend.isAvailable()) {
+  if (gpuBackend.isAvailable() && hoverTech === "GPU") {
     console.log("[HoverDetection] Using GPU backend");
     return gpuBackend;
   }

@@ -60,7 +60,8 @@ export type DatasetName =
 export let currDataset: DatasetName = "student_dataset";
 export const lineState: Record<string, { active: boolean }> = {};
 export let activeTool = "line";
-
+export type HoverTech = "GPU" | "JS";
+export let hoverTech: HoverTech = "GPU";
 export const drawState: DrawState = {
   isDrawing: false,
   wasDrawing: false,
@@ -91,6 +92,14 @@ export let benchmarkData: BenchmarkData = {
   numOfIterations: null,
   avgSpeedTime: null,
 };
+
+export function getHoverTech() {
+  return hoverTech;
+}
+
+export function setHoverTech(tech: HoverTech) {
+  hoverTech = tech;
+}
 
 export function setActiveTool(tool) {
   activeTool = tool;

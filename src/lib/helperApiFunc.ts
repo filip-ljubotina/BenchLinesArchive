@@ -16,6 +16,9 @@ import {
   setBenchmarkData,
   activeTool,
   setActiveTool,
+  hoverTech,
+  HoverTech,
+  setHoverTech,
 } from "./globals";
 import * as utils from "./utils";
 import * as helper from "./helper";
@@ -30,6 +33,7 @@ import {
   redrawBackgroundPolylines,
 } from "./parallelcoordinates";
 import { updateLineDataBuffer } from "./hover/hover";
+import { isWebGPUSupported } from "pixi.js";
 
 //---------- Show and Hide Functions ----------
 export function hide(dimension: string): void {
@@ -177,6 +181,18 @@ export function getAllDatasetOptions(): DatasetName[] {
 
 export function getCurrentDataset(): DatasetName {
   return currDataset;
+}
+
+export async function isWebGPUSupportedHelper() {
+  return isWebGPUSupported();
+}
+
+export function getHoverTechHelper() {
+  return hoverTech;
+}
+
+export function setHoverTechHelper(tech: HoverTech) {
+  setHoverTech(tech);
 }
 
 export function setNewBenchmarkData(newBenchmarkData: BenchmarkData) {

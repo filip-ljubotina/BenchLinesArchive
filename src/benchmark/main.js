@@ -35,6 +35,9 @@ import {
   getCurrentWebTechnologie,
   setCurrentWebTechnologie,
   setActiveToolHelper,
+  getHoverTechHelper,
+  setHoverTechHelper,
+  isWebGPUSupportedHelper,
 } from "./lib/spcd3.js";
 
 let data;
@@ -83,6 +86,7 @@ document.addEventListener(
     generateDropdownForShow();
     generateDropdownForInvert();
     generateDropdownForMove();
+    generateDropDownForHoverTech();
     generateDropDownForWebTech();
     generateDropDownForDataset();
     generateDropdownForFilter();
@@ -177,6 +181,7 @@ function handleFileSelect(event) {
       generateDropdownForShow();
       generateDropdownForInvert();
       generateDropdownForMove();
+      generateDropDownForHoverTech();
       generateDropDownForWebTech();
       generateDropDownForDataset();
       generateDropdownForFilter();
@@ -522,6 +527,69 @@ export function generateDropDownForDataset() {
 
     if (value !== "student_dataset") {
       const path = getDatasetPath(value);
+      const res = await fetch(path);
+      const text = await res.text();
+      drawChart(loadCSV(text));
+    } else {
+      drawChart(loadCSV(data));
+    }
+  });
+
+  container.appendChild(label);
+  container.appendChild(select);
+}
+
+export function generateDropDownForHoverTech() {
+  const container = document.getElementById("hoverTechContainer");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  // Check GPU availability directly
+  const gpuAvailable = "gpu" in navigator;
+
+  // If GPU not available, force JS
+  if (!gpuAvailable && getHoverTechHelper() === "GPU") {
+    setHoverTechHelper("JS");
+  }
+
+  // Label
+  const label = document.createElement("span");
+  label.textContent = "Hover:";
+  label.style.marginRight = "0.5rem";
+
+  // Dropdown
+  const select = document.createElement("select");
+
+  // Disable dropdown if GPU is not available
+  if (!gpuAvailable) {
+    select.disabled = true;
+    select.title = "GPU not available - using JS fallback";
+  }
+
+  ["GPU", "JS"].forEach(function(value) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+
+    // Disable GPU option if not available
+    if (value === "GPU" && !gpuAvailable) {
+      option.disabled = true;
+      option.textContent = "GPU (unavailable)";
+    }
+
+    if (value === getHoverTechHelper()) option.selected = true;
+    select.appendChild(option);
+  });
+
+  select.addEventListener("change", async function(e) {
+    const value = e.target.value;
+    setHoverTechHelper(value);
+
+    const datasetSelect = document.querySelector("#datasetContainer select");
+
+    if (datasetSelect.value !== "student_dataset") {
+      const path = getDatasetPath(datasetSelect.value);
       const res = await fetch(path);
       const text = await res.text();
       drawChart(loadCSV(text));
